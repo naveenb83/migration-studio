@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { cfg, ws, wsFull } from '../lib/config';
 import { list, readText, sha256, tryReadText, writeText } from '../lib/files';
 import { HttpError, requireTeam } from '../lib/identity';
+import { chunkCandidates, draftNameFor, fileCandidates, notebookSource, QUERY_SUFFIX, type OutputCandidate } from '../lib/geniemigrate';
 import { genieFolder, pack, teamWorkDir, type TeamT } from '../lib/pack';
 import { validateTeamFile, type ManifestItem } from '../lib/validate';
 import { uploadedText } from './uploads';
@@ -136,10 +137,10 @@ export function registerWork(app: Express): void {
       const c = await requireTeam(req);
       const gm = (pack() as { genie_migrate?: { url?: string; steps?: string[]; ssis_preview?: boolean } }).genie_migrate ?? {};
       const listFolder = async (path: string) => {
-        const out: Array<{ path: string; name: string; type: string }> = [];
+        const out: Array<{ path: string; name: string; type: string; id?: string }> = [];
         try {
           for await (const o of wsFull().workspace.list({ path })) {
-            out.push({ path: o.path ?? '', name: (o.path ?? '').split('/').pop() ?? '', type: String(o.object_type ?? '') });
+            out.push({ path: o.path ?? '', name: (o.path ?? '').split('/').pop() ?? '', type: String(o.object_type ?? ''), id: o.object_id ? String(o.object_id) : undefined });
             if (out.length > 200) break;
           }
         } catch (e) {
@@ -161,6 +162,30 @@ export function registerWork(app: Express): void {
           return null;
         }
       };
+      // Genie Migrate saves conversions as query objects, which the folder listing hides: look for the expected names.
+      const input = (await listFolder(genieFolder(c.team, 'genie_in'))).items;
+      const candidates: OutputCandidate[] = fileCandidates(outRoot, input);
+      for (const pkg of input.filter((f) => f.type !== 'DIRECTORY' && /\.dtsx$/i.test(f.name) && f.id).slice(0, 5)) {
+        const chunkDir = `${outRoot}/.lakebridge/chunks/${pkg.id}`;
+        candidates.push(...chunkCandidates(chunkDir, pkg.name, (await listFolder(chunkDir)).items.map((i) => i.name)));
+      }
+      const found = (
+        await Promise.all(
+          candidates.slice(0, 60).map(async (q) => {
+            try {
+              const text = notebookSource(await workspaceText(q.path));
+              return { ...q, chars: text.length };
+            } catch {
+              return null; // not converted (yet)
+            }
+          }),
+        )
+      ).filter((q): q is OutputCandidate & { chars: number } => q !== null);
+      const ssis = [...new Set(candidates.filter((q) => q.parts).map((q) => q.from))].map((file) => ({
+        file,
+        parts: candidates.find((q) => q.from === file)?.parts ?? 0,
+        converted: found.filter((q) => q.from === file).length,
+      }));
       return {
         url: gm.url ?? null,
         workspace_url: host,
@@ -170,11 +195,15 @@ export function registerWork(app: Express): void {
         ssis_preview: Boolean(gm.ssis_preview),
         input_folder: genieFolder(c.team, 'genie_in'),
         output_folder: outRoot,
-        input: (await listFolder(genieFolder(c.team, 'genie_in'))).items,
-        // converted code only: hide Genie Migrate's analysis file and its working folders (e.g. .lakebridge/chunks)
-        output: [...out.items.filter((i) => i.type !== 'DIRECTORY'), ...nested.filter((i) => i.type !== 'DIRECTORY')].filter(
-          (i) => !/(^|\/)analysis[^/]*\.json$/i.test(i.path) && !i.path.split('/').some((seg) => seg.startsWith('.')),
-        ),
+        input,
+        // converted code only: Genie Migrate's queries, plus any plain files saved there (not the analysis file or working folders)
+        output: [
+          ...found,
+          ...[...out.items.filter((i) => i.type !== 'DIRECTORY'), ...nested.filter((i) => i.type !== 'DIRECTORY')].filter(
+            (i) => !/(^|\/)analysis[^/]*\.json$/i.test(i.path) && !i.path.split('/').some((seg) => seg.startsWith('.')),
+          ),
+        ],
+        ssis,
         output_error: out.error ?? null,
       };
     }),
@@ -190,10 +219,14 @@ export function registerWork(app: Express): void {
       if ('path' in body) {
         const root = genieFolder(c.team, 'genie_out');
         if (!body.path.startsWith(`${root}/`) || body.path.includes('..')) throw new HttpError(400, "Import only from your team's Genie Migrate output folder.");
-        const text = await workspaceText(body.path);
-        const name = (body.path.split('/').pop() ?? 'converted').replace(/[^A-Za-z0-9._-]/g, '_');
-        const meta = await saveWithMeta(`${draftsDir(c.team)}/${name.match(/\.(sql|ya?ml|py)$/i) ? name : `${name}.sql`}`, text, 'genie_migrate', c.email, body.path);
-        await logEvent(c.team.id, c.email, 'genie_migrate_import', 'task2', { from: body.path });
+        const raw = await workspaceText(body.path);
+        const text = body.path.endsWith(QUERY_SUFFIX) ? notebookSource(raw) : raw;
+        let name = draftNameFor(body.path);
+        // never overwrite a draft the team wrote or got from somewhere else; re-importing a Genie Migrate draft refreshes it
+        const existing = await readMeta(`${draftsDir(c.team)}/${name}`);
+        if (existing && existing.source !== 'genie_migrate') name = name.replace(/(\.[^.]+)$/, '_genie_migrate$1');
+        const meta = await saveWithMeta(`${draftsDir(c.team)}/${name}`, text, 'genie_migrate', c.email, body.path);
+        await logEvent(c.team.id, c.email, 'genie_migrate_import', 'task2', { from: body.path, name, sha256: meta.sha256 });
         return { ok: true, name, meta };
       }
       const meta = await saveWithMeta(`${draftsDir(c.team)}/${body.name}`, body.pasted_sql, 'pasted', c.email);

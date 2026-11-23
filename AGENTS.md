@@ -52,7 +52,7 @@
 - `docs/12_runbook_new_workspace.md` is the exact sequence to stand the app up in a workspace, plus the gotchas found while building.
 - **No analytics, jobs or files plugin.** All reads go through server routes (`app/server/routes/*.ts`) with server-side
   identifiers and the caller's roster team; the client never sends a table name, path or job parameter.
-- **The browser bundle is prebuilt** (`npm run prebuild:client` → `app/client/prebuilt/`): the Apps npm proxy refuses some UI
+- **The browser bundle is prebuilt** (`npm run bundle:client` → `app/client/prebuilt/`): the Apps npm proxy refuses some UI
   libraries, which are `optionalDependencies`. Rebuild it after every client change, before `databricks apps deploy`.
 - Tests: `cd app && npx vitest run` (validator), `uv run --project scanner pytest` (scanner), `tests/e2e_api.py` (deployed app).
 

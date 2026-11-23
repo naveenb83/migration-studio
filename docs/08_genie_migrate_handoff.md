@@ -10,7 +10,7 @@ So the app **prepares, hands off and imports**.
 
 ## Folder convention (per team, created during provisioning)
 ```
-{root}/teams/{team}/genie_in/          ← Genie Migrate input (Workspace files published from the pack)
+{root}/teams/{team}/genie_in/          ← Genie Migrate input (Workspace files published from the pack; teams: SQL only, demo: SQL + SSIS)
 {root}/teams/{team}/genie_out/    ← where attendees point the Migration Project output
 /Volumes/{cat}/{prefix}workshop/team_work/drafts/   ← imported, pasted or drafted files (never executed)
 /Volumes/{cat}/{prefix}workshop/team_work/<manifest> ← what the recheck job executes
@@ -31,7 +31,7 @@ So the app **prepares, hands off and imports**.
 
 ## Fallbacks (feature-flagged; state them honestly in the UI)
 - **Genie Migrate not enabled or not working:** "Draft with AI" (`/api/draft`) or the **prepared example** (`pack.genie_migrate.prepared_example_dir`), labelled as such. Never present either as a live Genie Migrate conversion.
-- **SSIS:** only if the workspace is enrolled in the private preview. Otherwise the app explains packages with the SSIS viewer and assistant, and scheduling and ingestion remain reviewed engineering work.
+- **SSIS:** attendee projects are SQL-only; the facilitator converts the package in the `demo` project as a demo. Only if the workspace is enrolled in the private preview. Otherwise the app explains packages with the SSIS viewer and assistant, and scheduling and ingestion remain reviewed engineering work.
 
 ## Permissions to check in preflight
 - The attendee can open Genie Code and Migration Projects (workspace preview toggles).

@@ -15,8 +15,9 @@ interface GM {
   input_url?: string | null;
   output_url?: string | null;
   input: Array<{ path: string; name: string; type: string }>;
-  output: Array<{ path: string; name: string; type: string }>;
+  output: Array<{ path: string; name: string; type: string; label?: string; from?: string; part?: number; parts?: number; chars?: number }>;
   output_error: string | null;
+  ssis?: Array<{ file: string; parts: number; converted: number }>;
 }
 
 export function HandOff({ onImported }: { onImported: () => void }) {
@@ -128,6 +129,16 @@ export function HandOff({ onImported }: { onImported: () => void }) {
               </Button>
             </div>
           </div>
+          <div className="mb-2 text-xs text-muted-foreground">
+            Genie Migrate saves each converted file as a SQL query (in the workspace it shows as Type <b>Query</b>). Importing copies the
+            converted code into your drafts. Nothing runs until you adapt a draft and save it as a team file.
+          </div>
+          {(g.ssis ?? []).map((p) => (
+            <div key={p.file} className={`mb-2 rounded-md border px-3 py-2 text-xs ${p.converted < p.parts ? 'border-amber-300 bg-amber-50 text-amber-900' : 'bg-muted/40'}`}>
+              SSIS package <b>{p.file}</b>: Genie Migrate split it into {p.parts} parts; {p.converted} of {p.parts} converted so far.
+              {p.converted < p.parts && ' The parts are fragments of one package: read them in order, and check them against the package diagram in Task 1.'}
+            </div>
+          ))}
           {g.output_error && <div className="text-xs text-red-700">Could not list the output folder: {g.output_error}</div>}
           {g.output.length === 0 ? (
             <EmptyState title="Nothing in your output folder yet">Run Genie Migrate, save to the output folder, then refresh. Or paste the converted SQL.</EmptyState>
@@ -135,8 +146,13 @@ export function HandOff({ onImported }: { onImported: () => void }) {
             <div className="divide-y rounded-md border">
               {g.output.map((f) => (
                 <div key={f.path} className="flex items-center justify-between gap-2 px-3 py-2 text-sm">
-                  <span className="truncate" title={f.path}>
-                    {f.path.slice(g.output_folder.length + 1)}
+                  <span className="min-w-0 truncate" title={f.path}>
+                    {f.label ?? f.path.slice(g.output_folder.length + 1)}
+                    {f.type === 'QUERY' && (
+                      <span className="ml-2 rounded bg-indigo-50 px-1.5 py-0.5 text-[10px] font-medium text-indigo-700">
+                        Genie Migrate query{f.from && !f.part ? ` · from ${f.from}` : ''}
+                      </span>
+                    )}
                   </span>
                   <Button size="sm" variant="secondary" disabled={busy === f.path} onClick={() => void importFile(f.path)}>
                     <Download className="mr-1 h-3.5 w-3.5" /> Import to drafts

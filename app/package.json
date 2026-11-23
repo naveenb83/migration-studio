@@ -22,7 +22,7 @@
     "sync": "appkit plugin sync --write --silent",
     "typegen": "appkit generate-types",
     "setup": "appkit setup --write",
-    "prebuild:client": "npm run build:client && rm -rf client/prebuilt && cp -R client/dist client/prebuilt"
+    "bundle:client": "npm run build:client && rm -rf client/prebuilt && cp -R client/dist client/prebuilt"
   },
   "keywords": [],
   "author": "",
