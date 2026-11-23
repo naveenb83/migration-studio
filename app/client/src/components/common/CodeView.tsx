@@ -14,10 +14,30 @@ export function langFor(name: string) {
   return [sql()];
 }
 
-export function CodeView({ value, name = 'x.sql', height = '420px', onChange, readOnly = !onChange }: { value: string; name?: string; height?: string; onChange?: (v: string) => void; readOnly?: boolean }) {
+export interface LineSelection {
+  from: number;
+  to: number;
+  text: string;
+}
+
+export function CodeView({ value, name = 'x.sql', height = '420px', onChange, readOnly = !onChange, onSelectLines }: { value: string; name?: string; height?: string; onChange?: (v: string) => void; readOnly?: boolean; onSelectLines?: (sel: LineSelection | null) => void }) {
   return (
     <div className="overflow-hidden rounded-md border text-[13px]">
-      <CodeMirror value={value} height={height} extensions={langFor(name)} editable={!readOnly} readOnly={readOnly} onChange={onChange} basicSetup={{ lineNumbers: true, foldGutter: true }} />
+      <CodeMirror
+        value={value}
+        height={height}
+        extensions={langFor(name)}
+        editable
+        readOnly={readOnly}
+        onChange={onChange}
+        basicSetup={{ lineNumbers: true, foldGutter: true }}
+        onUpdate={(u) => {
+          if (!onSelectLines || !u.selectionSet) return;
+          const r = u.state.selection.main;
+          if (r.empty) return onSelectLines(null);
+          onSelectLines({ from: u.state.doc.lineAt(r.from).number, to: u.state.doc.lineAt(r.to).number, text: u.state.sliceDoc(r.from, r.to) });
+        }}
+      />
     </div>
   );
 }

@@ -1,7 +1,8 @@
 /** Read-only browser over the pack's legacy folder. Files are shown as text in CodeMirror (never as HTML). */
 import { useMemo, useState } from 'react';
 import { ChevronDown, ChevronRight, File, Folder } from 'lucide-react';
-import { CodeView } from '@/components/common/CodeView';
+import { CodeView, type LineSelection } from '@/components/common/CodeView';
+import { FileActions } from './FileActions';
 import { EmptyState, ErrorState, Loading } from '@/components/common';
 import { useApi } from '@/lib/poll';
 
@@ -44,7 +45,12 @@ function buildDirTree(files: TreeFile[]): DirNode {
 
 export function CodeBrowser() {
   const tree = useApi<TreeFile[]>('/api/pack/tree?dir=legacy');
-  const [selected, setSelected] = useState<string | null>(null);
+  const [selected, setSelectedRaw] = useState<string | null>(null);
+  const [sel, setSel] = useState<LineSelection | null>(null);
+  const setSelected = (p: string) => {
+    setSelectedRaw(p);
+    setSel(null);
+  };
   const file = useApi<FileBody>(selected ? `/api/pack/file?path=${encodeURIComponent(selected)}` : null, [selected]);
   const root = useMemo(() => buildDirTree(tree.data ?? []), [tree.data]);
 
@@ -67,8 +73,9 @@ export function CodeBrowser() {
         ) : file.data ? (
           <div className="space-y-2">
             <div className="break-all font-mono text-xs text-muted-foreground">{file.data.path}</div>
+            <FileActions path={file.data.path} sel={sel} />
             {file.data.truncated && <div className="text-xs text-amber-800">Shown up to the first 600 KB.</div>}
-            <CodeView value={file.data.content} name={selected} height="520px" />
+            <CodeView value={file.data.content} name={selected} height="520px" onSelectLines={setSel} />
           </div>
         ) : null}
       </div>

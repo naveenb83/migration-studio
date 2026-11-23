@@ -69,7 +69,7 @@ export default function Page() {
           <TabsTrigger value="lineage">Lineage worksheet</TabsTrigger>
           <TabsTrigger value="rules">Rules agreement</TabsTrigger>
           <TabsTrigger value="questions">Open questions</TabsTrigger>
-          <TabsTrigger value="prompts">Prompt pack</TabsTrigger>
+          <TabsTrigger value="prompts">Ask Genie Code</TabsTrigger>
           <TabsTrigger value="shared">Shared package</TabsTrigger>
         </TabsList>
 
@@ -107,7 +107,7 @@ export default function Page() {
         </TabsContent>
 
         <TabsContent value="prompts">
-          <Section title="Prompt pack" description="Copy a prompt into your assistant of choice. The in-app assistant is not switched on in this build.">
+          <Section title="Ask Genie Code to trace the flow" description="Genie Code is the workspace's coding agent. It runs in the workspace, next to your team's copy of the legacy code. Check every answer against the file.">
             <PromptsTab prompts={me.pack.prompts} />
           </Section>
         </TabsContent>

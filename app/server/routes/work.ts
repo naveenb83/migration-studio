@@ -152,8 +152,20 @@ export function registerWork(app: Express): void {
       // one level deeper: Genie Migrate writes a project sub-folder
       const nested: Array<{ path: string; name: string; type: string }> = [];
       for (const d of out.items.filter((i) => i.type === 'DIRECTORY').slice(0, 10)) nested.push(...(await listFolder(d.path)).items);
+      const host = (wsFull().config.host ?? '').replace(/\/$/, '');
+      const folderUrl = async (path: string) => {
+        try {
+          const id = (await wsFull().workspace.getStatus({ path })).object_id;
+          return id ? `${host}/browse/folders/${String(id)}` : null;
+        } catch {
+          return null;
+        }
+      };
       return {
         url: gm.url ?? null,
+        workspace_url: host,
+        input_url: await folderUrl(genieFolder(c.team, 'genie_in')),
+        output_url: await folderUrl(outRoot),
         steps: gm.steps ?? [],
         ssis_preview: Boolean(gm.ssis_preview),
         input_folder: genieFolder(c.team, 'genie_in'),

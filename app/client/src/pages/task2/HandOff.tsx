@@ -12,6 +12,8 @@ interface GM {
   ssis_preview: boolean;
   input_folder: string;
   output_folder: string;
+  input_url?: string | null;
+  output_url?: string | null;
   input: Array<{ path: string; name: string; type: string }>;
   output: Array<{ path: string; name: string; type: string }>;
   output_error: string | null;
@@ -94,12 +96,22 @@ export function HandOff({ onImported }: { onImported: () => void }) {
               <div className="font-medium">Input folder ({g.input.length} files)</div>
               <div className="flex items-center gap-2">
                 <code className="break-all">{g.input_folder}</code> <CopyButton text={g.input_folder} />
+                {g.input_url && (
+                  <a className="whitespace-nowrap underline" href={g.input_url} target="_blank" rel="noreferrer">
+                    Open
+                  </a>
+                )}
               </div>
             </div>
             <div>
               <div className="font-medium">Output folder</div>
               <div className="flex items-center gap-2">
                 <code className="break-all">{g.output_folder}</code> <CopyButton text={g.output_folder} />
+                {g.output_url && (
+                  <a className="whitespace-nowrap underline" href={g.output_url} target="_blank" rel="noreferrer">
+                    Open
+                  </a>
+                )}
               </div>
             </div>
           </div>
