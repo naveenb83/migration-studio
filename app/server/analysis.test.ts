@@ -19,7 +19,7 @@ const fixture = {
     { from: 2, to: 4, aspect: 'definition', op: 'create', in: 1, via: 'CREATE VIEW', selfReference: false },
     { from: 3, to: 4, aspect: 'definition', op: 'create', in: 1, via: 'CREATE VIEW', selfReference: false },
   ],
-  fileLineage: { edges: [], cycles: [], executionOrder: [1] },
+  fileLineage: { edges: [{ before: 1, after: 1 }], cycles: [], executionOrder: [1] },
   facts: {
     entities: [
       { id: 1, type: 'file', path: 'meter_reads_view.sql' }, { id: 9, type: 'analysis', analyzerComponent: 'example', analyzerVersion: '0.1.0' },
@@ -55,6 +55,9 @@ describe('parseAnalysis (Genie Migrate Analyze, schema 0.2)', () => {
     expect(lineage).toHaveLength(2);
     expect(lineage[0]).toMatchObject({ fromObject: 2, to: 4, via: 'CREATE VIEW', lines: [5, 21] });
     expect(m.objects.find((o) => o.id === 4)?.createdBy).toEqual([1]);
+  });
+  it('reads file ordering edges ({before, after})', () => {
+    expect(m.fileEdges).toEqual([{ from: 1, to: 1, via: undefined }]);
   });
   it('gives each edge a stable key for review decisions', () => {
     expect(new Set(m.edges.map((e) => e.key)).size).toBe(m.edges.length);

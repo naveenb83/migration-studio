@@ -150,7 +150,8 @@ export function parseAnalysis(raw: unknown): AnalysisModel {
     edges.push({ key: `l:${from}:${to}:${fileId ?? 'x'}`, kind: 'lineage', fromObject: from, fromFile: null, to, op, aspect, via: str(l.via), fileId, lines: ev?.lines ?? null });
   }
   const fl = (d.fileLineage ?? {}) as J;
-  const fileEdges = arr(fl.edges).map((e) => ({ from: num(e.from), to: num(e.to), via: str(e.via) ?? undefined }));
+  // file lineage edges are ordering constraints: { before, after } (older drafts: { from, to })
+  const fileEdges = arr(fl.edges).map((e) => ({ from: num(e.before ?? e.from), to: num(e.after ?? e.to), via: str(e.via) ?? undefined }));
   const fileName = new Map(files.map((f) => [f.id, f.path]));
   const missing = objects.filter((o) => o.provenance === 'undetermined').map((o) => ({ id: o.id, name: o.name, readBy: o.readBy.map((id) => fileName.get(id) ?? `#${id}`) }));
   const analysisEnt = [...entities.values()].find((e) => e.type === 'analysis');

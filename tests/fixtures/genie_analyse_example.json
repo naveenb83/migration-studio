@@ -86,7 +86,12 @@
   }
  ],
  "fileLineage": {
-  "edges": [],
+  "edges": [
+   {
+    "before": 1,
+    "after": 1
+   }
+  ],
   "cycles": [],
   "executionOrder": [
    1
