@@ -306,12 +306,16 @@ def plan(files: list[dict], cfg: dict, known_tables: dict[str, str]) -> dict:
 
     created = {}   # name -> kind (VIEW/TABLE), objects a converted statement creates
     written = set()
-    for _, _, _, a, _ in raw:
+    obj_files: dict[str, set] = {}   # object -> the files that create or write it
+    for fname, _, _, a, _ in raw:
         if a.status == "run" and a.target:
             if a.kind in ("create_view", "create_table", "ctas"):
                 created[a.target.name] = "VIEW" if a.kind == "create_view" else "TABLE"
             elif a.kind in ("insert", "merge", "update", "delete", "truncate"):
                 written.add(a.target.name)
+            else:
+                continue
+            obj_files.setdefault(a.target.name, set()).add(fname)
     temp = {a.target.name for _, _, _, a, _ in raw if a.temporary and a.target}
 
     def feed_for(name):
@@ -330,6 +334,8 @@ def plan(files: list[dict], cfg: dict, known_tables: dict[str, str]) -> dict:
 
     def resolve(r: Ref) -> str | None:
         key_full, key = r.written.lower(), r.name
+        # a schema-qualified name may carry the legacy name split in two: stg_x.vw_y = legacy table stg_x_vw_y
+        joined = "_".join(key_full.replace("`", "").split(".")[-2:]) if "." in key_full else key
         if key in temp:
             return r.name
         if key_full in overrides:
@@ -338,13 +344,15 @@ def plan(files: list[dict], cfg: dict, known_tables: dict[str, str]) -> dict:
             return overrides[key]
         if key in created or key in prepared:
             return f"{sandbox}.{key}"
-        fd = feed_for(key)
+        fd = feed_for(key) or feed_for(joined)
         if fd:
             return fd["from"]
-        if key in inputs:
-            return inputs[key]
-        if key in known_tables:
-            return known_tables[key]
+        for k in (key, joined):
+            if k in inputs:
+                return inputs[k]
+        for k in (key, joined):
+            if k in known_tables:
+                return known_tables[k]
         return None
 
     # 2. order files by dependency (a file that reads what another creates runs after it), stable otherwise
@@ -408,6 +416,7 @@ def plan(files: list[dict], cfg: dict, known_tables: dict[str, str]) -> dict:
         prep.append({"label": "Empty table in the legacy shape", "name": name, "sql": f"CREATE TABLE {q(sandbox + '.' + name)} AS SELECT * FROM {q(legacy)} WHERE false",
                      "why": "The converted code writes to this table but none of the files creates it (its DDL isn't in the project), so it starts empty, in the legacy table's shape."})
     return {"sandbox": sandbox, "steps": steps, "created": {k: f"{sandbox}.{k}" for k in created}, "created_kinds": created, "written": sorted(written),
+            "obj_files": {k: sorted(v) for k, v in obj_files.items()},
             "prepared": prepared, "prep": prep, "feeds": feeds_plan, "unresolved": unresolved, "order": order}
 
 
@@ -420,14 +429,21 @@ def find_output(o: dict, plan_out: dict, overrides: dict | None = None) -> tuple
     names = list(plan_out["created"]) + [n for n in plan_out["prepared"] if n not in plan_out["created"]]
     kinds = {n: plan_out["created_kinds"].get(n, "TABLE") for n in names}
     allowed = o.get("kinds") or ["VIEW", "TABLE"]
+    pick = lambda hits: sorted(hits, key=lambda x: (allowed.index(kinds[x]), len(x)))[0]
     legacy = o.get("legacy_object", "").lower()
     if legacy in names and kinds[legacy] in allowed:
         return f"{sb}.{legacy}", "same name as the legacy object"
-    for pat in o.get("match") or []:
-        hits = [n for n in names if re.search(pat, n, re.I) and kinds[n] in allowed]
+    # the object made by the file converted from the legacy file (Genie Migrate keeps the file names)
+    files = [f.lower() for f in o.get("files") or []]
+    if files:
+        hits = [n for n in names if kinds[n] in allowed and any(h in fn.lower() for fn in (plan_out.get("obj_files") or {}).get(n, []) for h in files)]
         if hits:
-            # prefer the kind listed first (e.g. the view over a table of the same family), then the shortest name
-            n = sorted(hits, key=lambda x: (allowed.index(kinds[x]), len(x)))[0]
+            n = pick(hits)
+            return f"{sb}.{n}", f"made by the converted {next(fn for fn in plan_out['obj_files'][n] if any(h in fn.lower() for h in files))}"
+    for pat in o.get("match") or []:
+        hits = [n for n in names if kinds[n] in allowed and (re.search(pat, n, re.I) or re.search(pat.replace("_", ""), n.replace("_", ""), re.I))]
+        if hits:
+            n = pick(hits)
             return f"{sb}.{n}", f"name matches '{pat}'"
     return None, "no converted object matches"
 
