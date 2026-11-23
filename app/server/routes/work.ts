@@ -151,7 +151,7 @@ export function registerWork(app: Express): void {
       const out = await listFolder(outRoot);
       // one level deeper: Genie Migrate writes a project sub-folder
       const nested: Array<{ path: string; name: string; type: string }> = [];
-      for (const d of out.items.filter((i) => i.type === 'DIRECTORY').slice(0, 10)) nested.push(...(await listFolder(d.path)).items);
+      for (const d of out.items.filter((i) => i.type === 'DIRECTORY' && !i.name.startsWith('.')).slice(0, 10)) nested.push(...(await listFolder(d.path)).items);
       const host = (wsFull().config.host ?? '').replace(/\/$/, '');
       const folderUrl = async (path: string) => {
         try {
@@ -171,7 +171,10 @@ export function registerWork(app: Express): void {
         input_folder: genieFolder(c.team, 'genie_in'),
         output_folder: outRoot,
         input: (await listFolder(genieFolder(c.team, 'genie_in'))).items,
-        output: [...out.items.filter((i) => i.type !== 'DIRECTORY'), ...nested.filter((i) => i.type !== 'DIRECTORY')],
+        // converted code only: hide Genie Migrate's analysis file and its working folders (e.g. .lakebridge/chunks)
+        output: [...out.items.filter((i) => i.type !== 'DIRECTORY'), ...nested.filter((i) => i.type !== 'DIRECTORY')].filter(
+          (i) => !/(^|\/)analysis[^/]*\.json$/i.test(i.path) && !i.path.split('/').some((seg) => seg.startsWith('.')),
+        ),
         output_error: out.error ?? null,
       };
     }),
