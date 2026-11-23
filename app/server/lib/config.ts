@@ -27,6 +27,7 @@ export const cfg = {
   packFile: env('STUDIO_PACK_FILE') || 'pack.json',
   jobRecheck: Number(env('DATABRICKS_JOB_RECHECK') || env('DATABRICKS_JOB_ID') || 0),
   jobProve: Number(env('DATABRICKS_JOB_PROVE') || 0),
+  jobScan: Number(env('DATABRICKS_JOB_SCAN') || 0),
   servingEndpoint: env('DATABRICKS_SERVING_ENDPOINT_NAME'),
   genieSpaces: {
     results: env('DATABRICKS_GENIE_SPACE_ID'),

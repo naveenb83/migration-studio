@@ -71,7 +71,7 @@ export function TeamFiles({ refreshKey }: { refreshKey: number }) {
   };
 
   if (files.loading && !files.data) return <Loading rows={5} />;
-  if (files.error) return <ErrorState error={files.error} retry={files.reload} />;
+  if (files.error) return <ErrorState error={files.error} retry={() => void files.reload()} />;
   const selRow = files.data?.find((f) => f.file === sel);
   return (
     <div className="space-y-4">

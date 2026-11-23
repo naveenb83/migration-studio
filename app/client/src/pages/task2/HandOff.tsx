@@ -51,7 +51,7 @@ export function HandOff({ onImported }: { onImported: () => void }) {
       setBusy(null);
     }
   };
-  const usePrepared = async (path: string) => {
+  const copyPrepared = async (path: string) => {
     setBusy(path);
     try {
       const r = await api.post<{ name: string }>('/api/prepared', { name: path.split('/').pop() });
@@ -65,7 +65,7 @@ export function HandOff({ onImported }: { onImported: () => void }) {
   };
 
   if (gm.loading && !gm.data) return <Loading />;
-  if (gm.error) return <ErrorState error={gm.error} retry={gm.reload} fallback="Use the paste-in or the prepared example below." />;
+  if (gm.error) return <ErrorState error={gm.error} retry={() => void gm.reload()} fallback="Use the paste-in or the prepared example below." />;
   const g = gm.data as GM;
   return (
     <div className="space-y-4">
@@ -87,7 +87,7 @@ export function HandOff({ onImported }: { onImported: () => void }) {
             {g.steps.map((s, i) => (
               <li key={i}>{s}</li>
             ))}
-            {!g.ssis_preview && <li className="text-muted-foreground">SSIS package conversion is a preview feature that isn't enabled here: convert the SQL objects, and read the package in Task 1.</li>}
+            {!g.ssis_preview && <li className="text-muted-foreground">SSIS package conversion is a preview feature that isn&rsquo;t enabled here: convert the SQL objects, and read the package in Task 1.</li>}
           </ol>
           <div className="space-y-2 text-xs">
             <div>
@@ -144,7 +144,7 @@ export function HandOff({ onImported }: { onImported: () => void }) {
         ) : (
           <div className="flex flex-wrap gap-2">
             {(prepared.data ?? []).map((f) => (
-              <Button key={f.path} size="sm" variant="outline" disabled={busy === f.path} onClick={() => void usePrepared(f.path)}>
+              <Button key={f.path} size="sm" variant="outline" disabled={busy === f.path} onClick={() => void copyPrepared(f.path)}>
                 Use {f.path.split('/').pop()}
               </Button>
             ))}

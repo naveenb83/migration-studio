@@ -2,7 +2,7 @@
 name = "migration-studio-scanner"
 version = "0.1.0"
 description = "Clean-room offline estate scanner (SSIS, SQL Agent, T-SQL, framework YAML) for Migration Studio WP2."
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 dependencies = [
     "lxml>=5.0",
     "sqlglot==30.31.0",

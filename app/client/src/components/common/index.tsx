@@ -76,6 +76,7 @@ const PROV: Record<string, string> = {
   seed: 'As-built seed',
   team_edit: 'Team edit',
   genie_migrate: 'Genie Migrate',
+  genie_code: 'Genie Code',
   pasted: 'Pasted in',
   assistant_draft: 'AI draft',
   prepared_example: 'Prepared example',

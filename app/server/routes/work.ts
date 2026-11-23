@@ -6,9 +6,10 @@ import { list, readText, sha256, tryReadText, writeText } from '../lib/files';
 import { HttpError, requireTeam } from '../lib/identity';
 import { genieFolder, pack, teamWorkDir, type TeamT } from '../lib/pack';
 import { validateTeamFile, type ManifestItem } from '../lib/validate';
+import { uploadedText } from './uploads';
 import { logEvent, route, SAFE_NAME } from './util';
 
-const SOURCES = ['team_edit', 'genie_migrate', 'pasted', 'assistant_draft', 'prepared_example', 'seed'] as const;
+const SOURCES = ['team_edit', 'genie_migrate', 'genie_code', 'pasted', 'assistant_draft', 'prepared_example', 'seed'] as const;
 type Source = (typeof SOURCES)[number];
 
 interface Meta {
@@ -208,7 +209,7 @@ export function registerWork(app: Express): void {
       c = await requireTeam(req);
       body = z.object({ source_path: z.string().max(300), target: z.string().max(200), instructions: z.string().max(2000).optional() }).parse(req.body);
       if (!cfg.servingEndpoint) throw new HttpError(503, 'No model endpoint configured.');
-      if (!body.source_path.startsWith('legacy/') || body.source_path.includes('..')) throw new HttpError(400, 'Pick a legacy file.');
+      if (!/^(legacy|uploads)\//.test(body.source_path) || body.source_path.includes('..')) throw new HttpError(400, 'Pick a legacy file or one of your uploads.');
     } catch (e) {
       res.status((e as HttpError).status || 400).json({ error: String((e as Error).message) });
       return;
@@ -222,7 +223,7 @@ export function registerWork(app: Express): void {
       const p = pack() as { assistant?: { skill_dirs?: string[]; extra_instructions?: string } };
       const skillDir = p.assistant?.skill_dirs?.[0];
       const skill = skillDir ? ((await tryReadText(`${cfg.packVolume}/${skillDir}/SKILL.md`)) ?? '') : '';
-      const source = (await readText(`${cfg.packVolume}/${body.source_path}`)).slice(0, 60_000);
+      const source = (body.source_path.startsWith('uploads/') ? await uploadedText(c.team, body.source_path.slice('uploads/'.length)) : await readText(`${cfg.packVolume}/${body.source_path}`)).slice(0, 60_000);
       const item = manifestItem(body.target);
       const system = [
         'You convert legacy SQL Server / SSIS logic into Databricks artefacts for a migration workshop.',

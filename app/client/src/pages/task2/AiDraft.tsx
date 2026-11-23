@@ -11,6 +11,7 @@ import { useApi } from '@/lib/poll';
 export function AiDraft({ onSaved }: { onSaved: () => void }) {
   const me = useSession();
   const tree = useApi<Array<{ path: string; size: number }>>('/api/pack/tree?dir=legacy');
+  const uploads = useApi<{ files: Array<{ name: string }> }>('/api/uploads');
   const [source, setSource] = useState('');
   const [target, setTarget] = useState(me.pack.manifest[0]?.file ?? '');
   const [extra, setExtra] = useState('');
@@ -77,6 +78,11 @@ export function AiDraft({ onSaved }: { onSaved: () => void }) {
             {(tree.data ?? []).map((f) => (
               <SelectItem key={f.path} value={f.path}>
                 {f.path.split('/').slice(-1)[0]}
+              </SelectItem>
+            ))}
+            {(uploads.data?.files ?? []).map((f) => (
+              <SelectItem key={`u_${f.name}`} value={`uploads/${f.name}`}>
+                Your upload: {f.name}
               </SelectItem>
             ))}
           </SelectContent>

@@ -17,11 +17,12 @@ import { GRAPH_SCHEMA, type GraphDoc, type GraphNode } from './types';
 
 const NODE_TYPES = { ssis: SsisNode };
 
-export function SsisViewer({ packageId }: { packageId?: string }) {
-  const list = useApi<string[]>('/api/estate-graphs');
+/** Defaults read the workshop estate; pass `listPath`/`graphPathFor` to show another set (e.g. a team's own uploads). */
+export function SsisViewer({ packageId, listPath = '/api/estate-graphs', graphPathFor = (id: string) => `/api/estate-graph/${encodeURIComponent(id)}`, refreshKey = 0 }: { packageId?: string; listPath?: string; graphPathFor?: (id: string) => string; refreshKey?: number }) {
+  const list = useApi<string[]>(listPath, [refreshKey]);
   const [picked, setPicked] = useState<string | null>(null);
   const active = picked ?? packageId ?? list.data?.[0] ?? null;
-  const graph = useApi<GraphDoc>(active ? `/api/estate-graph/${encodeURIComponent(active)}` : null, [active]);
+  const graph = useApi<GraphDoc>(active ? graphPathFor(active) : null, [active, refreshKey]);
 
   if (list.loading && !list.data) return <Loading label="Loading packages" />;
   if (list.error) return <ErrorState error={list.error} retry={() => void list.reload()} />;

@@ -1,7 +1,7 @@
 /** Home summary, facilitator board + health, pack reload, evidence export, estate reads. */
 import type { Application as Express } from 'express';
 import { z } from 'zod';
-import { cfg, fq, ws } from '../lib/config';
+import { cfg, fq, ws, wsFull } from '../lib/config';
 import { list, readText, sha256, tryReadText, writeText } from '../lib/files';
 import { caller, requireFacilitator, requireTeam } from '../lib/identity';
 import { activeRequest, runInfo } from '../lib/jobs';
@@ -104,6 +104,12 @@ export function registerFac(app: Express): void {
         ...Object.entries(cfg.genieSpaces)
           .filter(([, v]) => v)
           .map(([k, id]) => check(`Genie space (${k})`, async () => (await c.genie.getSpace({ space_id: id })).title ?? 'ok')),
+        check('Genie Code skill', async () => {
+          const name = ((pack() as { assistant?: { skill_dirs?: string[] } }).assistant?.skill_dirs?.[0] ?? '').split('/').filter(Boolean).pop() ?? '';
+          if (!name) return 'no skill in this pack';
+          await wsFull().workspace.getStatus({ path: `/Workspace/.assistant/skills/${name}/SKILL.md` });
+          return `workspace skill @${name} installed`;
+        }),
         check('Estate tables', async () => `${(await query<{ n: number }>(`SELECT count(*) AS n FROM ${fq('estate_inventory')}`))[0]?.n} inventory rows`),
       ]);
     }),

@@ -18,5 +18,7 @@ env:
     valueFrom: job-recheck
   - name: DATABRICKS_JOB_PROVE
     valueFrom: job-prove
+  - name: DATABRICKS_JOB_SCAN
+    valueFrom: job-scan
   - name: DATABRICKS_SERVING_ENDPOINT_NAME
     valueFrom: serving-endpoint

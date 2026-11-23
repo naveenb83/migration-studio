@@ -3,6 +3,7 @@ import { ws } from './config';
 import { createHash } from 'node:crypto';
 
 export const sha256 = (s: string) => createHash('sha256').update(s, 'utf8').digest('hex');
+export const sha256Bytes = (b: Buffer) => createHash('sha256').update(b).digest('hex');
 
 const fsUrl = (path: string) => {
   const host = (ws().config.host ?? '').replace(/\/$/, '');
@@ -32,13 +33,36 @@ export async function tryReadText(path: string): Promise<string | null> {
   }
 }
 
-export async function writeText(path: string, content: string): Promise<void> {
+export async function writeBytes(path: string, body: Buffer): Promise<void> {
   const r = await fetch(`${fsUrl(path)}?overwrite=true`, {
     method: 'PUT',
     headers: await authHeaders({ 'Content-Type': 'application/octet-stream' }),
-    body: Buffer.from(content, 'utf8'),
+    body,
   });
   if (!r.ok) throw new Error(`Files API ${r.status} writing ${path}: ${(await r.text()).slice(0, 200)}`);
+}
+
+export async function writeText(path: string, content: string): Promise<void> {
+  await writeBytes(path, Buffer.from(content, 'utf8'));
+}
+
+export async function readBytes(path: string): Promise<Buffer> {
+  const r = await fetch(fsUrl(path), { headers: await authHeaders() });
+  if (r.status === 404) throw Object.assign(new Error(`not found: ${path}`), { status: 404 });
+  if (!r.ok) throw new Error(`Files API ${r.status} reading ${path}: ${(await r.text()).slice(0, 200)}`);
+  return Buffer.from(await r.arrayBuffer());
+}
+
+/** Decode legacy code files: UTF-16 (common for SSIS exports) or UTF-8, with or without a BOM. */
+export function decodeText(b: Buffer): string {
+  if (b.length >= 2 && b[0] === 0xff && b[1] === 0xfe) return b.subarray(2).toString('utf16le');
+  if (b.length >= 2 && b[0] === 0xfe && b[1] === 0xff) {
+    const sw = Buffer.from(b.subarray(2));
+    sw.swap16();
+    return sw.toString('utf16le');
+  }
+  if (b.length >= 3 && b[0] === 0xef && b[1] === 0xbb && b[2] === 0xbf) return b.subarray(3).toString('utf8');
+  return b.toString('utf8');
 }
 
 export async function remove(path: string): Promise<void> {

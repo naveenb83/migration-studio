@@ -8,6 +8,7 @@ import { useSession, useTask } from '@/lib/me';
 import { useApi } from '@/lib/poll';
 import type { RunRow } from '@/lib/types';
 import { AiDraft } from './AiDraft';
+import { GenieCode } from './GenieCode';
 import { HandOff } from './HandOff';
 import { RunPanel } from './RunPanel';
 import { TeamFiles } from './TeamFiles';
@@ -36,12 +37,16 @@ export default function Task2Page() {
       <Tabs defaultValue="convert">
         <TabsList>
           <TabsTrigger value="convert">Convert</TabsTrigger>
+          <TabsTrigger value="geniecode">Genie Code</TabsTrigger>
           <TabsTrigger value="files">Review & save</TabsTrigger>
           <TabsTrigger value="run">Run my files</TabsTrigger>
         </TabsList>
         <TabsContent value="convert" className="space-y-4">
           <HandOff onImported={bump} />
           {(me.features.draft ?? true) && me.draft_enabled && <AiDraft onSaved={bump} />}
+        </TabsContent>
+        <TabsContent value="geniecode">
+          <GenieCode onSaved={bump} />
         </TabsContent>
         <TabsContent value="files">
           <TeamFiles refreshKey={refreshKey} />

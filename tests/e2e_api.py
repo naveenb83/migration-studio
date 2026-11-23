@@ -78,6 +78,8 @@ if __name__ == "__main__":
     ap.add_argument("--fixed-workflow")
     ap.add_argument("--skip-prove", action="store_true")
     ap.add_argument("--skip-fix", action="store_true")
+    ap.add_argument("--skip-core", action="store_true", help="skip recheck/fix/prove (only the own-code + Genie Code journeys)")
+    ap.add_argument("--own-code-dir", help="folder of FICTIONAL .dtsx/.sql files to upload (e.g. scanner/tests/fixtures/example_water/legacy)")
     a = ap.parse_args()
     api = Api(a.url, a.profile)
 
@@ -98,6 +100,52 @@ if __name__ == "__main__":
     if st == 200 and tree:
         st, r = api.call("POST", "/api/prepared", {"name": tree[0]["path"].split("/")[-1]})
         check("prepared example copied to drafts", st == 200, str(r)[:100])
+
+    if a.own_code_dir:
+        import base64, glob, os
+        files = sorted(glob.glob(os.path.join(a.own_code_dir, "**", "*.dtsx"), recursive=True))[:2] + sorted(glob.glob(os.path.join(a.own_code_dir, "**", "*.sql"), recursive=True))[:2]
+        for f in files:
+            st, r = api.call("POST", "/api/uploads", {"name": os.path.basename(f), "content_base64": base64.b64encode(open(f, "rb").read()).decode()})
+            check(f"own code: upload {os.path.basename(f)}", st == 200, str(r)[:100])
+        st, bad = api.call("POST", "/api/uploads", {"name": "evil.sh", "content_base64": base64.b64encode(b"rm -rf /").decode()})
+        check("own code: disallowed file type rejected", st == 400, str(bad)[:100])
+        st, up = api.call("GET", "/api/uploads")
+        check("own code: files listed with hashes", st == 200 and len(up["files"]) >= len(files) and all(len((x.get("meta") or {}).get("sha256", "")) == 64 for x in up["files"]), f"{len(up.get('files', []))} files")
+        dtsx = next((os.path.basename(f) for f in files if f.endswith(".dtsx")), None)
+        if dtsx:
+            st, v = api.call("GET", f"/api/uploads/file/{dtsx}")
+            check("own code: view decodes the package", st == 200 and "DTS:" in v.get("content", "") or "<DTS" in v.get("content", ""), f"{len(v.get('content', ''))} chars")
+            st, g = api.call("POST", f"/api/uploads/file/{dtsx}/to-genie-migrate")
+            check("own code: copied to the Genie Migrate input folder", st == 200 and "/genie_in/own_code/" in (g or {}).get("path", ""), str(g)[:140])
+        st, sc = api.call("POST", "/api/uploads/scan")
+        if check("own code: scan started", st == 200, str(sc)[:120]):
+            s3 = wait(api, sc["job_run_id"], 900)
+            check("own code: scan finished", s3.get("state") in ("completed", "passed"), str(s3.get("state")))
+            st, graphs = api.call("GET", "/api/uploads/graphs")
+            check("own code: SSIS diagrams produced", st == 200 and len(graphs) >= 1, str(graphs))
+            if graphs:
+                st, gj = api.call("GET", f"/api/uploads/graph/{graphs[0]}")
+                check("own code: diagram JSON has nodes and edges", st == 200 and bool(gj.get("nodes")) and "edges" in gj, f"{len(gj.get('nodes', []))} nodes")
+            st, inv = api.call("GET", "/api/uploads/scan-table/estate_inventory")
+            check("own code: inventory rows", st == 200 and len(inv) >= 1, f"{len(inv or [])} rows")
+        # Genie Code round trip (prepare -> files listed -> bring back as draft and as a team file)
+        st, pr = api.call("POST", "/api/genie-code/prepare", {"team_files": [manifest["stage_view"], manifest["workflow_yaml"]], "uploads": [dtsx] if dtsx else []})
+        check("genie code: files copied to the team folder", st == 200 and len(pr.get("copied", [])) >= 2 and bool(pr.get("folder_url")), str(pr.get("copied") if isinstance(pr, dict) else pr)[:160])
+        st, gcx = api.call("GET", "/api/genie-code")
+        check("genie code: skill installed and files listed", st == 200 and gcx["skill"]["installed"] and len(gcx["files"]) >= 2, f"skill={gcx['skill']} files={len(gcx['files'])}")
+        sv = next((f for f in gcx["files"] if f["name"] == manifest["stage_view"]), None)
+        if sv:
+            st, d = api.call("POST", "/api/genie-code/bring-back", {"path": sv["path"], "target_file": None})
+            check("genie code: brought back as a draft", st == 200 and d["meta"]["source"] == "genie_code", str(d)[:120])
+            st, t = api.call("POST", "/api/genie-code/bring-back", {"path": sv["path"], "target_file": manifest["stage_view"]})
+            check("genie code: brought back as the team file (validated)", st == 200 and t.get("saved_as") == manifest["stage_view"], str(t)[:120])
+            st, tf = api.call("GET", f"/api/teamfiles/{manifest['stage_view']}")
+            check("genie code: provenance recorded on the team file", st == 200 and (tf.get("meta") or {}).get("source") == "genie_code")
+
+    if a.skip_core:
+        n_ok = sum(1 for _, ok, _ in RESULTS if ok)
+        log(f"SUMMARY {n_ok}/{len(RESULTS)} passed")
+        sys.exit(0 if n_ok == len(RESULTS) else 1)
 
     # Recheck of the as-built files + one-run-per-team guard
     st, rc = api.call("POST", "/api/recheck", {})

@@ -1,0 +1,21 @@
+{
+  "name": "migration-studio scan",
+  "description": "Migration Studio: scan one team's uploaded legacy code (SSIS, T-SQL, Agent, YAML) into graph JSON + estate rows in the team's folder. Parses only.",
+  "max_concurrent_runs": 10,
+  "queue": {"enabled": true},
+  "timeout_seconds": 900,
+  "parameters": [
+    {"name": "pack_volume", "default": "<pack volume path, /Volumes/<cat>/<studio>/pack>"},
+    {"name": "input_dir", "default": ""},
+    {"name": "out_dir", "default": ""},
+    {"name": "scan_id", "default": ""},
+    {"name": "run_label", "default": ""}
+  ],
+  "tasks": [{
+    "task_key": "scan",
+    "max_retries": 0,
+    "disable_auto_optimization": true,
+    "timeout_seconds": 900,
+    "notebook_task": {"notebook_path": "<root>/kit/migration_studio_scan", "source": "WORKSPACE"}
+  }]
+}

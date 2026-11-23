@@ -26,6 +26,8 @@ variables:
     description: Job id of the recheck job (kit attendee notebook, mode=recheck)
   job_prove_id:
     description: Job id of the prove job (kit validate-dataset notebook)
+  job_scan_id:
+    description: Job id of the scan job (scans a team's uploaded code; parses only)
   serving_endpoint_name:
     description: Model serving endpoint for AI drafts
 
@@ -78,6 +80,10 @@ resources:
         - name: job-prove
           job:
             id: ${var.job_prove_id}
+            permission: CAN_MANAGE_RUN
+        - name: job-scan
+          job:
+            id: ${var.job_scan_id}
             permission: CAN_MANAGE_RUN
         - name: serving-endpoint
           serving_endpoint:
