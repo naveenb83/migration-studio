@@ -118,7 +118,7 @@ if __name__ == "__main__":
             st, g = api.call("POST", f"/api/uploads/file/{dtsx}/to-genie-migrate")
             check("own code: copied to the Genie Migrate input folder", st == 200 and "/genie_in/own_code/" in (g or {}).get("path", ""), str(g)[:140])
         st, sc = api.call("POST", "/api/uploads/scan")
-        if check("own code: scan started", st == 200, str(sc)[:120]):
+        if check("own code: scan started", st == 200 and isinstance(sc, dict) and "job_run_id" in sc, str(sc)[:120]):
             s3 = wait(api, sc["job_run_id"], 900)
             check("own code: scan finished", s3.get("state") in ("completed", "passed"), str(s3.get("state")))
             st, graphs = api.call("GET", "/api/uploads/graphs")
@@ -149,7 +149,8 @@ if __name__ == "__main__":
 
     # Recheck of the as-built files + one-run-per-team guard
     st, rc = api.call("POST", "/api/recheck", {})
-    check("recheck: started", st == 200, rc.get("run_label", str(rc))[:120] if isinstance(rc, dict) else str(rc))
+    if not check("recheck: started", st == 200 and isinstance(rc, dict) and "job_run_id" in rc, str(rc)[:120]):
+        sys.exit(1)
     st2, again = api.call("POST", "/api/recheck", {})
     check("recheck: second concurrent run refused (409)", st2 == 409, str(again)[:120])
     s1 = wait(api, rc["job_run_id"])
@@ -176,7 +177,8 @@ if __name__ == "__main__":
         st2, r2 = api.call("PUT", f"/api/teamfiles/{manifest['workflow_yaml']}", {"content": open(a.fixed_workflow).read(), "source": "team_edit"})
         check("fix: corrected files saved", st == 200 and st2 == 200, f"{str(r1)[:80]} {str(r2)[:80]}")
         st, rc2 = api.call("POST", "/api/recheck", {})
-        check("recheck 2: started with classroom approvals", st == 200 and rc2.get("apply_accepted") is True, rc2.get("run_label", ""))
+        if not check("recheck 2: started with classroom approvals", st == 200 and isinstance(rc2, dict) and rc2.get("apply_accepted") is True, str(rc2)[:120]):
+            sys.exit(1)
         s2 = wait(api, rc2["job_run_id"])
         want = exp(pack, "after_fix")
         check("recheck 2: after-fix counts (SIMULATED approvals)", counts(s2) == want, f"{s2.get('state')} {counts(s2)} want {want}")

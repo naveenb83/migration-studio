@@ -103,5 +103,10 @@ If Tier A fails at G4, the app becomes a **read-only scoreboard + Genie**, and t
   - **e2e against the deployed app: 26/26** (`tests/e2e_api.py`): as-built 19/6/9/0/0; fixed + classroom 27/0/5/2/0 (SIMULATED); prove clean → fault gate_rejected
     with the affected key → clean; one-run-per-team guard; save validation; import/paste/prepared; explanations; export; board; health. Genie answers via OBO.
   - Runbook for the next workspace: `docs/12_runbook_new_workspace.md`.
+- 2026-11-23 15:00–16:40: added (Naveen: "I want the ability"; using it is optional for the customer):
+  - "Your own code": upload .sql/.dtsx/.yml to the team folder → view, copy to Genie Migrate input, AI-draft source, **scan job** (SSIS diagrams + inventory, parses only).
+  - **Genie Code** hand-off in Task 2 (no API exists): copy to the team's Genie Code folder + prompts README, links, bring back with diff + provenance `genie_code`;
+    framework skill installed as a **workspace skill** (`/Workspace/.assistant/skills/<skill>/SKILL.md`, users CAN_READ).
+  - Fixed: scan job copy race; serverless env without lxml (job installs it). **Full regression 44/44 on a clean team** (core 26 + own code + Genie Code).
 - **NEXT:** pick the delivery workspace, then repeat the runbook there (steps 1–15) with the delivery pack; run the e2e + a non-admin pass.
 - **Still needed for delivery:** the delivery workspace profile, attendee group, 3 external test users, facilitator emails, and the least-privilege job service principal (or an admin who can create it).

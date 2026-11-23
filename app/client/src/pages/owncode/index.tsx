@@ -153,8 +153,10 @@ export default function OwnCodePage() {
       <Alert>
         <ShieldAlert className="h-4 w-4" />
         <AlertDescription>
-          Only if your team wants to. Files go to <b>your team&rsquo;s folder</b> in this workspace (your team and the facilitators can see them) and are never run. Remove passwords or keys before
-          uploading: diagrams mask connection secrets, but the files themselves are stored as you upload them. Delete them any time.
+          <p>
+            Only if your team wants to. Files go to <b>your team&rsquo;s folder</b> in this workspace (your team and the facilitators can see them) and are never run. Remove passwords or keys before
+            uploading: diagrams mask connection secrets, but the files themselves are stored as you upload them. Delete them any time.
+          </p>
         </AlertDescription>
       </Alert>
 

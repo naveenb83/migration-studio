@@ -53,7 +53,8 @@ summary = run_scan([work_in], work_out, scan_id=scan_id)
 
 # Replace the previous scan output for this team.
 shutil.rmtree(out, ignore_errors=True)
-shutil.copytree(work_out, out)
+os.makedirs(out, exist_ok=True)   # the folder can reappear between delete and copy (volume FUSE, concurrent scans)
+shutil.copytree(work_out, out, dirs_exist_ok=True)
 result = {"scan_id": scan_id, "files": n, "packages": sorted(summary.get("packages", {}).keys()),
           "table_rows": summary.get("table_rows", {}), "errors": summary.get("errors", [])[:20]}
 print(json.dumps(result, indent=1))
