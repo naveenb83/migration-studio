@@ -1,0 +1,21 @@
+source_system: example_src
+connection_name: example_src
+source_catalog: ExampleSource
+source_schema: dbo
+schedule: "0 21 7 * * ?"
+destination_schema: stg_exw
+ingestion_type: sql_ingest_lakeflow_connect
+tables:
+  - name: meter_reads_src
+    primary_keys:
+      - meter_id
+      - read_date
+  - name: meter_devices
+    primary_keys:
+      - meter_id
+  - name: station
+    primary_keys:
+      - station_id
+  - name: meters
+    primary_keys:
+      - meter_id

@@ -1,0 +1,22 @@
+command: ['npm', 'run', 'start']
+env:
+  - name: DATABRICKS_WAREHOUSE_ID
+    valueFrom: sql-warehouse
+  - name: DATABRICKS_VOLUME_PACK
+    valueFrom: pack-volume
+  - name: DATABRICKS_VOLUME_EXPORTS
+    valueFrom: exports-volume
+  - name: DATABRICKS_GENIE_SPACE_ID
+    valueFrom: genie-space
+  - name: DATABRICKS_GENIE_SPACE_ESTATE
+    valueFrom: genie-space-estate
+  - name: DATABRICKS_GENIE_SPACE_DATA
+    valueFrom: genie-space-data
+  - name: DATABRICKS_JOB_ID
+    valueFrom: job-recheck
+  - name: DATABRICKS_JOB_RECHECK
+    valueFrom: job-recheck
+  - name: DATABRICKS_JOB_PROVE
+    valueFrom: job-prove
+  - name: DATABRICKS_SERVING_ENDPOINT_NAME
+    valueFrom: serving-endpoint

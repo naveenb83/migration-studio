@@ -1,0 +1,16 @@
+# Copy to targets.local.yml (git-ignored) and fill in. Never commit real ids.
+targets:
+  build:
+    default: true
+    workspace:
+      host: https://<build-workspace-host>
+    variables:
+      sql_warehouse_id: <warehouse-id>
+      pack_volume: <catalog>.<studio_schema>.pack
+      exports_volume: <catalog>.<studio_schema>.exports
+      genie_space_id: <results-space-id>
+      job_recheck_id: <recheck-job-id>
+      job_prove_id: <prove-job-id>
+      serving_endpoint_name: <endpoint-name>
+      genie_space_estate_id: <estate-space-id>
+      genie_space_data_id: <data-space-id>

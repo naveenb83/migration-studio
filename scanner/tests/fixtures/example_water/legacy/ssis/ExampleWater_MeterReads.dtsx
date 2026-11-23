@@ -1,0 +1,249 @@
+<?xml version="1.0"?>
+<DTS:Executable xmlns:DTS="www.microsoft.com/SqlServer/Dts"
+  DTS:refId="Package"
+  DTS:CreationName="Microsoft.Package"
+  DTS:DTSID="{A1000000-0000-4000-8000-000000000001}"
+  DTS:ExecutableType="Microsoft.Package"
+  DTS:ObjectName="ExampleWater_MeterReads"
+  DTS:Description="Fictional example package: loads meter reads into staging, then upserts.">
+  <DTS:ConnectionManagers>
+    <DTS:ConnectionManager
+      DTS:refId="Package.ConnectionManagers[ExampleSource]"
+      DTS:CreationName="OLEDB"
+      DTS:DTSID="{A2000000-0000-4000-8000-000000000002}"
+      DTS:ObjectName="ExampleSource">
+      <DTS:ObjectData>
+        <DTS:ConnectionManager
+          DTS:ConnectionString="Data Source=EXAMPLE-SQL-01;Initial Catalog=ExampleSource;Provider=SQLNCLI11.1;Integrated Security=SSPI;User ID=svc_fixture;Password=P@ssw0rd-FIXTURE;" />
+      </DTS:ObjectData>
+    </DTS:ConnectionManager>
+    <DTS:ConnectionManager
+      DTS:refId="Package.ConnectionManagers[ExampleEDH]"
+      DTS:CreationName="OLEDB"
+      DTS:DTSID="{A3000000-0000-4000-8000-000000000003}"
+      DTS:ObjectName="ExampleEDH">
+      <DTS:PropertyExpression DTS:Name="ConnectionString">@[User::edh_db_cfg]</DTS:PropertyExpression>
+      <DTS:ObjectData>
+        <DTS:ConnectionManager />
+      </DTS:ObjectData>
+    </DTS:ConnectionManager>
+  </DTS:ConnectionManagers>
+  <DTS:Variables>
+    <DTS:Variable DTS:DataType="8" DTS:Namespace="User" DTS:ObjectName="edh_db_cfg">
+      <DTS:VariableValue DTS:DataType="8">Data Source=EXAMPLE-SQL-02;Initial Catalog=ExampleEDH;Password=Secr3t-FIXTURE;</DTS:VariableValue>
+    </DTS:Variable>
+    <DTS:Variable DTS:DataType="8" DTS:Namespace="User" DTS:ObjectName="ConnectionPassword">
+      <DTS:VariableValue DTS:DataType="8">Pw-FIXTURE-VAR</DTS:VariableValue>
+    </DTS:Variable>
+    <DTS:Variable DTS:DataType="3" DTS:Namespace="User" DTS:ObjectName="RowCount">
+      <DTS:VariableValue DTS:DataType="3">0</DTS:VariableValue>
+    </DTS:Variable>
+  </DTS:Variables>
+  <DTS:Executables>
+    <DTS:Executable
+      DTS:refId="Package\Log End"
+      DTS:CreationName="Microsoft.ExecuteSQLTask"
+      DTS:DTSID="{A4000000-0000-4000-8000-000000000004}"
+      DTS:ExecutableType="Microsoft.ExecuteSQLTask"
+      DTS:ObjectName="Log End">
+      <DTS:ObjectData>
+        <SQLTask:SqlTaskData
+          xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask"
+          SQLTask:Connection="{A3000000-0000-4000-8000-000000000003}"
+          SQLTask:SqlStatementSource="EXEC ? = [dbo].[usp_ETL_LogEnd] ?, ?" />
+      </DTS:ObjectData>
+    </DTS:Executable>
+    <DTS:Executable
+      DTS:refId="Package\Load Meter Reads"
+      DTS:CreationName="STOCK:SEQUENCE"
+      DTS:DTSID="{A5000000-0000-4000-8000-000000000005}"
+      DTS:ExecutableType="STOCK:SEQUENCE"
+      DTS:ObjectName="Load Meter Reads">
+      <DTS:Executables>
+        <DTS:Executable
+          DTS:refId="Package\Load Meter Reads\Truncate Staging"
+          DTS:CreationName="Microsoft.ExecuteSQLTask"
+          DTS:DTSID="{A6000000-0000-4000-8000-000000000006}"
+          DTS:ExecutableType="Microsoft.ExecuteSQLTask"
+          DTS:ObjectName="Truncate Staging">
+          <DTS:ObjectData>
+            <SQLTask:SqlTaskData
+              xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask"
+              SQLTask:Connection="{A3000000-0000-4000-8000-000000000003}"
+              SQLTask:SqlStatementSource="TRUNCATE TABLE [dbo].[STG_EXW_METER_READS]&#13;&#10;&#13;&#10;GO" />
+          </DTS:ObjectData>
+        </DTS:Executable>
+        <DTS:Executable
+          DTS:refId="Package\Load Meter Reads\Truncate Devices"
+          DTS:CreationName="Microsoft.ExecuteSQLTask"
+          DTS:DTSID="{A7000000-0000-4000-8000-000000000007}"
+          DTS:ExecutableType="Microsoft.ExecuteSQLTask"
+          DTS:ObjectName="Truncate Devices">
+          <DTS:ObjectData>
+            <SQLTask:SqlTaskData
+              xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask"
+              SQLTask:Connection="{A3000000-0000-4000-8000-000000000003}"
+              SQLTask:SqlStatementSource="TRUNCATE TABLE [dbo].[STG_EXW_METER_READS_DEVICES]" />
+          </DTS:ObjectData>
+        </DTS:Executable>
+        <DTS:Executable
+          DTS:refId="Package\Load Meter Reads\Xfr - Meter Reads"
+          DTS:CreationName="Microsoft.Pipeline"
+          DTS:DTSID="{A8000000-0000-4000-8000-000000000008}"
+          DTS:ExecutableType="Microsoft.Pipeline"
+          DTS:ObjectName="Xfr - Meter Reads">
+          <DTS:ObjectData>
+            <pipeline version="1">
+              <components>
+                <component refId="Package\Load Meter Reads\Xfr - Meter Reads\Read Meters" componentClassID="Microsoft.OLEDBSource" name="Read Meters">
+                  <outputs>
+                    <output refId="Package\Load Meter Reads\Xfr - Meter Reads\Read Meters.Outputs[OLE DB Source Output]" name="OLE DB Source Output"></output>
+                    <output refId="Package\Load Meter Reads\Xfr - Meter Reads\Read Meters.Outputs[OLE DB Source Error Output]" name="OLE DB Source Error Output" isErrorOut="true"></output>
+                  </outputs>
+                  <connections>
+                    <connection refId="Package\Load Meter Reads\Xfr - Meter Reads\Read Meters.Connections[OleDbConnection]" connectionManagerID="Package.ConnectionManagers[ExampleSource]" connectionManagerRefId="Package.ConnectionManagers[ExampleSource]" name="OleDbConnection" />
+                  </connections>
+                  <properties>
+                    <property name="OpenRowset">[dbo].[vw_MeterReads_Source]</property>
+                    <property name="OpenRowsetVariable"></property>
+                    <property name="SqlCommand"></property>
+                    <property name="AccessMode">0</property>
+                  </properties>
+                </component>
+                <component refId="Package\Load Meter Reads\Xfr - Meter Reads\Add Load Stamp" componentClassID="Microsoft.DerivedColumn" name="Add Load Stamp">
+                  <outputs>
+                    <output refId="Package\Load Meter Reads\Xfr - Meter Reads\Add Load Stamp.Outputs[Derived Column Output]" name="Derived Column Output"></output>
+                  </outputs>
+                </component>
+                <component refId="Package\Load Meter Reads\Xfr - Meter Reads\Write Staging" componentClassID="Microsoft.OLEDBDestination" name="Write Staging">
+                  <connections>
+                    <connection refId="Package\Load Meter Reads\Xfr - Meter Reads\Write Staging.Connections[OleDbConnection]" connectionManagerID="Package.ConnectionManagers[ExampleEDH]" connectionManagerRefId="Package.ConnectionManagers[ExampleEDH]" name="OleDbConnection" />
+                  </connections>
+                  <properties>
+                    <property name="OpenRowset">[dbo].[STG_EXW_METER_READS]</property>
+                    <property name="OpenRowsetVariable"></property>
+                    <property name="AccessMode">3</property>
+                  </properties>
+                </component>
+                <component refId="Package\Load Meter Reads\Xfr - Meter Reads\Write Rejects" componentClassID="Microsoft.OLEDBDestination" name="Write Rejects">
+                  <connections>
+                    <connection refId="Package\Load Meter Reads\Xfr - Meter Reads\Write Rejects.Connections[OleDbConnection]" connectionManagerID="Package.ConnectionManagers[ExampleEDH]" connectionManagerRefId="Package.ConnectionManagers[ExampleEDH]" name="OleDbConnection" />
+                  </connections>
+                  <properties>
+                    <property name="OpenRowset">[dbo].[EXW_Meter_Reads_Rejects]</property>
+                    <property name="OpenRowsetVariable"></property>
+                    <property name="AccessMode">3</property>
+                  </properties>
+                </component>
+              </components>
+              <paths>
+                <path refId="Package\Load Meter Reads\Xfr - Meter Reads.Paths[OLE DB Source Output]" endId="Package\Load Meter Reads\Xfr - Meter Reads\Add Load Stamp.Inputs[Derived Column Input]" name="OLE DB Source Output" startId="Package\Load Meter Reads\Xfr - Meter Reads\Read Meters.Outputs[OLE DB Source Output]" />
+                <path refId="Package\Load Meter Reads\Xfr - Meter Reads.Paths[Derived Column Output]" endId="Package\Load Meter Reads\Xfr - Meter Reads\Write Staging.Inputs[OLE DB Destination Input]" name="Derived Column Output" startId="Package\Load Meter Reads\Xfr - Meter Reads\Add Load Stamp.Outputs[Derived Column Output]" />
+                <path refId="Package\Load Meter Reads\Xfr - Meter Reads.Paths[OLE DB Source Error Output]" endId="Package\Load Meter Reads\Xfr - Meter Reads\Write Rejects.Inputs[OLE DB Destination Input]" name="OLE DB Source Error Output" startId="Package\Load Meter Reads\Xfr - Meter Reads\Read Meters.Outputs[OLE DB Source Error Output]" />
+              </paths>
+            </pipeline>
+          </DTS:ObjectData>
+        </DTS:Executable>
+        <DTS:Executable
+          DTS:refId="Package\Load Meter Reads\Xfr - Meter Devices"
+          DTS:CreationName="Microsoft.Pipeline"
+          DTS:DTSID="{A9000000-0000-4000-8000-000000000009}"
+          DTS:ExecutableType="Microsoft.Pipeline"
+          DTS:ObjectName="Xfr - Meter Devices">
+          <DTS:ObjectData>
+            <pipeline version="1">
+              <components>
+                <component refId="Package\Load Meter Reads\Xfr - Meter Devices\Read Devices" componentClassID="Microsoft.OLEDBSource" name="Read Devices">
+                  <outputs>
+                    <output refId="Package\Load Meter Reads\Xfr - Meter Devices\Read Devices.Outputs[OLE DB Source Output]" name="OLE DB Source Output"></output>
+                  </outputs>
+                  <connections>
+                    <connection refId="Package\Load Meter Reads\Xfr - Meter Devices\Read Devices.Connections[OleDbConnection]" connectionManagerID="Package.ConnectionManagers[ExampleSource]" connectionManagerRefId="Package.ConnectionManagers[ExampleSource]" name="OleDbConnection" />
+                  </connections>
+                  <properties>
+                    <property name="OpenRowset">[dbo].[meter_devices]</property>
+                    <property name="OpenRowsetVariable"></property>
+                    <property name="AccessMode">0</property>
+                  </properties>
+                </component>
+                <component refId="Package\Load Meter Reads\Xfr - Meter Devices\Write Devices" componentClassID="Microsoft.OLEDBDestination" name="Write Devices">
+                  <connections>
+                    <connection refId="Package\Load Meter Reads\Xfr - Meter Devices\Write Devices.Connections[OleDbConnection]" connectionManagerID="Package.ConnectionManagers[ExampleEDH]" connectionManagerRefId="Package.ConnectionManagers[ExampleEDH]" name="OleDbConnection" />
+                  </connections>
+                  <properties>
+                    <property name="OpenRowset">[dbo].[STG_EXW_METER_READS_DEVICES]</property>
+                    <property name="OpenRowsetVariable"></property>
+                    <property name="AccessMode">3</property>
+                  </properties>
+                </component>
+              </components>
+              <paths>
+                <path refId="Package\Load Meter Reads\Xfr - Meter Devices.Paths[OLE DB Source Output]" endId="Package\Load Meter Reads\Xfr - Meter Devices\Write Devices.Inputs[OLE DB Destination Input]" name="OLE DB Source Output" startId="Package\Load Meter Reads\Xfr - Meter Devices\Read Devices.Outputs[OLE DB Source Output]" />
+              </paths>
+            </pipeline>
+          </DTS:ObjectData>
+        </DTS:Executable>
+        <DTS:Executable
+          DTS:refId="Package\Load Meter Reads\Run Upsert"
+          DTS:CreationName="Microsoft.ExecuteSQLTask"
+          DTS:DTSID="{AA000000-0000-4000-8000-00000000000A}"
+          DTS:ExecutableType="Microsoft.ExecuteSQLTask"
+          DTS:ObjectName="Run Upsert">
+          <DTS:ObjectData>
+            <SQLTask:SqlTaskData
+              xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask"
+              SQLTask:Connection="{A3000000-0000-4000-8000-000000000003}"
+              SQLTask:SqlStatementSource="EXEC [dbo].[usp_Upsert_MeterReads]&#13;&#10;&#13;&#10;GO" />
+          </DTS:ObjectData>
+        </DTS:Executable>
+      </DTS:Executables>
+      <DTS:PrecedenceConstraints>
+        <DTS:PrecedenceConstraint
+          DTS:refId="Package\Load Meter Reads.PrecedenceConstraints[Constraint]"
+          DTS:CreationName=""
+          DTS:DTSID="{AB000000-0000-4000-8000-00000000000B}"
+          DTS:From="Package\Load Meter Reads\Truncate Staging"
+          DTS:LogicalAnd="True"
+          DTS:ObjectName="Constraint"
+          DTS:To="Package\Load Meter Reads\Xfr - Meter Reads" />
+        <DTS:PrecedenceConstraint
+          DTS:refId="Package\Load Meter Reads.PrecedenceConstraints[Constraint 1]"
+          DTS:CreationName=""
+          DTS:DTSID="{AC000000-0000-4000-8000-00000000000C}"
+          DTS:From="Package\Load Meter Reads\Xfr - Meter Reads"
+          DTS:EvalOp="2"
+          DTS:Expression="@[User::RowCount] &gt;= 0"
+          DTS:LogicalAnd="True"
+          DTS:ObjectName="Constraint 1"
+          DTS:To="Package\Load Meter Reads\Run Upsert"
+          DTS:Value="0" />
+        <DTS:PrecedenceConstraint
+          DTS:refId="Package\Load Meter Reads.PrecedenceConstraints[Constraint 2]"
+          DTS:CreationName=""
+          DTS:DTSID="{AD000000-0000-4000-8000-00000000000D}"
+          DTS:From="Package\Load Meter Reads\Truncate Devices"
+          DTS:LogicalAnd="True"
+          DTS:ObjectName="Constraint 2"
+          DTS:To="Package\Load Meter Reads\Xfr - Meter Devices" />
+        <DTS:PrecedenceConstraint
+          DTS:refId="Package\Load Meter Reads.PrecedenceConstraints[Constraint 3]"
+          DTS:CreationName=""
+          DTS:DTSID="{AE000000-0000-4000-8000-00000000000E}"
+          DTS:From="Package\Load Meter Reads\Xfr - Meter Devices"
+          DTS:LogicalAnd="True"
+          DTS:ObjectName="Constraint 3"
+          DTS:To="Package\Load Meter Reads\Run Upsert" />
+      </DTS:PrecedenceConstraints>
+    </DTS:Executable>
+  </DTS:Executables>
+  <DTS:PrecedenceConstraints>
+    <DTS:PrecedenceConstraint
+      DTS:refId="Package.PrecedenceConstraints[Constraint]"
+      DTS:CreationName=""
+      DTS:DTSID="{AF000000-0000-4000-8000-00000000000F}"
+      DTS:From="Package\Load Meter Reads"
+      DTS:LogicalAnd="True"
+      DTS:ObjectName="Constraint"
+      DTS:To="Package\Log End" />
+  </DTS:PrecedenceConstraints>
+</DTS:Executable>

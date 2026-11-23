@@ -1,0 +1,12 @@
+database_layer: workflow
+jobs:
+  - name: exw_stg_to_edh_fact_meter_reads_job
+    depends_on: []
+    tags:
+      - Layer: orchestration
+email_notifications:
+  on_failure: []
+schedule:
+  pause_status: UNPAUSED
+  timezone_id: Australia/Brisbane
+  quartz_cron_expression: 0 22 6 ? * MON-FRI *

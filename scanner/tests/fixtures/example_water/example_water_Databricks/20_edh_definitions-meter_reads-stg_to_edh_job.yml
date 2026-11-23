@@ -1,0 +1,14 @@
+use_existing_cluster: false
+database_layer: edh
+trigger_on_file_arrival: false
+tables:
+  - sql_upsert_name: spx_upsert_fact_meter_reads
+    mechanism: edh_ingest_type1_upsert_delete
+    source_view_name: vw_stg_exw_meter_reads
+    merge_keys:
+      - meter_id
+      - read_date
+    target_table: fact_meter_reads
+    post_hook: false
+email_notifications:
+  on_failure: []

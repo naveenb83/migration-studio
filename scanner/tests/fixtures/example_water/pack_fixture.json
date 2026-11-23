@@ -1,0 +1,10 @@
+{
+  "pack_version": "fixture",
+  "estate": {
+    "code_dirs": ["legacy"],
+    "dataset_status": {
+      "METER_READS": "in_progress",
+      "METER_READS_DEVICES": "migrated"
+    }
+  }
+}

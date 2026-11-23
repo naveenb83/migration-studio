@@ -1,0 +1,85 @@
+# Migration Studio app bundle. Generic: every id is a variable. Workspace-specific values live in the
+# git-ignored targets.local.yml (see README: copy targets.example.yml). Deploy with `databricks apps deploy`.
+bundle:
+  name: migration-studio
+
+include:
+  - targets.local.yml
+
+variables:
+  sql_warehouse_id:
+    description: SQL warehouse id
+  pack_volume:
+    description: Engagement pack volume, full name catalog.schema.volume (also defines the studio catalog + schema)
+  exports_volume:
+    description: Exports volume, full name catalog.schema.volume
+  genie_space_id:
+    description: Genie space id for the results space (AppKit requires a default space)
+  genie_space_name:
+    description: Display name for the results Genie space resource
+    default: genie-space
+  genie_space_estate_id:
+    description: Genie space id for the legacy estate space
+  genie_space_data_id:
+    description: Genie space id for the legacy-vs-new data space
+  job_recheck_id:
+    description: Job id of the recheck job (kit attendee notebook, mode=recheck)
+  job_prove_id:
+    description: Job id of the prove job (kit validate-dataset notebook)
+  serving_endpoint_name:
+    description: Model serving endpoint for AI drafts
+
+resources:
+  apps:
+    app:
+      name: migration-studio
+      description: "Migration Studio: run a hands-on migration workshop end to end"
+      source_code_path: ./
+      lifecycle:
+        started: true
+      user_api_scopes:
+        - sql
+        - dashboards.genie
+        - serving.serving-endpoints
+      resources:
+        - name: sql-warehouse
+          sql_warehouse:
+            id: ${var.sql_warehouse_id}
+            permission: CAN_USE
+        - name: pack-volume
+          uc_securable:
+            securable_full_name: ${var.pack_volume}
+            securable_type: VOLUME
+            permission: READ_VOLUME
+        - name: exports-volume
+          uc_securable:
+            securable_full_name: ${var.exports_volume}
+            securable_type: VOLUME
+            permission: WRITE_VOLUME
+        - name: genie-space
+          genie_space:
+            name: ${var.genie_space_name}
+            space_id: ${var.genie_space_id}
+            permission: CAN_RUN
+        - name: genie-space-estate
+          genie_space:
+            name: genie-space-estate
+            space_id: ${var.genie_space_estate_id}
+            permission: CAN_RUN
+        - name: genie-space-data
+          genie_space:
+            name: genie-space-data
+            space_id: ${var.genie_space_data_id}
+            permission: CAN_RUN
+        - name: job-recheck
+          job:
+            id: ${var.job_recheck_id}
+            permission: CAN_MANAGE_RUN
+        - name: job-prove
+          job:
+            id: ${var.job_prove_id}
+            permission: CAN_MANAGE_RUN
+        - name: serving-endpoint
+          serving_endpoint:
+            name: ${var.serving_endpoint_name}
+            permission: CAN_QUERY

@@ -1,0 +1,58 @@
+<?xml version="1.0"?>
+<DTS:Executable xmlns:DTS="www.microsoft.com/SqlServer/Dts" DTS:refId="Package" DTS:CreationName="Microsoft.Package" DTS:DTSID="{B1000000-0000-4000-8000-000000000001}" DTS:ExecutableType="Microsoft.Package">
+  <DTS:Property DTS:Name="PackageFormatVersion">2</DTS:Property>
+  <DTS:Property DTS:Name="ObjectName">ExampleWater_Legacy2008</DTS:Property>
+  <DTS:Property DTS:Name="DTSID">{B1000000-0000-4000-8000-000000000001}</DTS:Property>
+  <DTS:ConnectionManagers>
+    <DTS:ConnectionManager DTS:refId="Package.ConnectionManagers[LegacyMeters]" DTS:CreationName="OLEDB">
+      <DTS:Property DTS:Name="ObjectName">LegacyMeters</DTS:Property>
+      <DTS:Property DTS:Name="DTSID">{B2000000-0000-4000-8000-000000000002}</DTS:Property>
+      <DTS:ObjectData>
+        <DTS:ConnectionManager>
+          <DTS:Property DTS:Name="ConnectionString">Data Source=EXAMPLE-SQL-03;Initial Catalog=LegacyMeters;Password=Legacy-Pw-FIXTURE;</DTS:Property>
+        </DTS:ConnectionManager>
+      </DTS:ObjectData>
+    </DTS:ConnectionManager>
+  </DTS:ConnectionManagers>
+  <DTS:Executables>
+    <DTS:Executable DTS:refId="Package\Legacy Report" DTS:CreationName="Microsoft.ExecuteSQLTask" DTS:DTSID="{B3000000-0000-4000-8000-000000000003}" DTS:ExecutableType="Microsoft.ExecuteSQLTask">
+      <DTS:Property DTS:Name="ObjectName">Legacy Report</DTS:Property>
+      <DTS:ObjectData>
+        <SQLTask:SqlTaskData xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask" SQLTask:SqlStatementSource="EXEC [dbo].[usp_Legacy_Report]" />
+      </DTS:ObjectData>
+    </DTS:Executable>
+    <DTS:Executable DTS:refId="Package\Legacy Load" DTS:CreationName="Microsoft.Pipeline" DTS:DTSID="{B4000000-0000-4000-8000-000000000004}" DTS:ExecutableType="Microsoft.Pipeline">
+      <DTS:Property DTS:Name="ObjectName">Legacy Load</DTS:Property>
+      <DTS:ObjectData>
+        <pipeline version="1">
+          <components>
+            <component refId="Package\Legacy Load\Read Legacy" componentClassID="Microsoft.OLEDBSource" name="Read Legacy">
+              <outputs>
+                <output refId="Package\Legacy Load\Read Legacy.Outputs[OLE DB Source Output]" name="OLE DB Source Output"></output>
+              </outputs>
+              <connections>
+                <connection refId="Package\Legacy Load\Read Legacy.Connections[OleDbConnection]" connectionManagerID="Package.ConnectionManagers[LegacyMeters]" connectionManagerRefId="Package.ConnectionManagers[LegacyMeters]" name="OleDbConnection" />
+              </connections>
+              <properties>
+                <property name="OpenRowset">[dbo].[LegacyMeters]</property>
+                <property name="AccessMode">0</property>
+              </properties>
+            </component>
+            <component refId="Package\Legacy Load\Write Legacy Staging" componentClassID="Microsoft.OLEDBDestination" name="Write Legacy Staging">
+              <properties>
+                <property name="OpenRowset">[dbo].[STG_EXW_LEGACY]</property>
+                <property name="AccessMode">3</property>
+              </properties>
+            </component>
+          </components>
+          <paths>
+            <path refId="Package\Legacy Load.Paths[OLE DB Source Output]" endId="Package\Legacy Load\Write Legacy Staging.Inputs[OLE DB Destination Input]" name="OLE DB Source Output" startId="Package\Legacy Load\Read Legacy.Outputs[OLE DB Source Output]" />
+          </paths>
+        </pipeline>
+      </DTS:ObjectData>
+    </DTS:Executable>
+  </DTS:Executables>
+  <DTS:PrecedenceConstraints>
+    <DTS:PrecedenceConstraint DTS:refId="Package.PrecedenceConstraints[Constraint]" DTS:CreationName="" DTS:DTSID="{B5000000-0000-4000-8000-000000000005}" DTS:From="Package\Legacy Report" DTS:LogicalAnd="True" DTS:ObjectName="Constraint" DTS:To="Package\Legacy Load" />
+  </DTS:PrecedenceConstraints>
+</DTS:Executable>
