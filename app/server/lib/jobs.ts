@@ -94,7 +94,7 @@ export function mapState(kind: string, info: RunInfo, log: RunLogRow | null): Ru
   }
   const text = `${info.error}\n${info.message}`;
   if (/recheck REJECTED|required artifacts missing|unresolved placeholders|config not found/i.test(text)) return 'artifact_error';
-  if (log && (kind === 'prove' || /VALIDATION GATE FAILED/i.test(text))) return 'gate_rejected';
+  if (log && (kind === 'prove' || kind === 'cprove' || /VALIDATION GATE FAILED/i.test(text))) return 'gate_rejected';
   return 'infra_error';
 }
 

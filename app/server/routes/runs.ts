@@ -141,7 +141,8 @@ export function registerRuns(app: Express): void {
       const c = await requireTeam(req);
       return query(
         `SELECT run_label, run_id, CAST(run_ts AS STRING) AS run_ts, entity, n_pass, n_fail, n_warn, n_info, n_error, n_blocking, apply_accepted, approval_mode,
-                CASE WHEN run_label LIKE 'baseline%' THEN 'baseline' WHEN run_label LIKE '%_prove_%' THEN 'prove' WHEN run_label LIKE '%recheck%' THEN 'recheck' ELSE 'other' END AS kind
+                CASE WHEN run_label LIKE 'baseline%' THEN 'baseline' WHEN run_label LIKE '%\\_cprove\\_%' THEN 'cprove' WHEN run_label LIKE '%\\_convert\\_%' THEN 'convert'
+                     WHEN run_label LIKE '%\\_prove\\_%' THEN 'prove' WHEN run_label LIKE '%recheck%' THEN 'recheck' ELSE 'other' END AS kind
          FROM ${fq('v_run_log')} WHERE team_id = :team AND run_label NOT LIKE 'seed\\_%'
          QUALIFY row_number() OVER (PARTITION BY run_label ORDER BY run_ts DESC) = 1
          ORDER BY CASE WHEN run_label LIKE 'baseline%' THEN 0 ELSE 1 END, run_ts DESC LIMIT 100`,

@@ -20,5 +20,7 @@ env:
     valueFrom: job-prove
   - name: DATABRICKS_JOB_SCAN
     valueFrom: job-scan
+  - name: DATABRICKS_JOB_CONVERT
+    valueFrom: job-convert
   - name: DATABRICKS_SERVING_ENDPOINT_NAME
     valueFrom: serving-endpoint

@@ -10,6 +10,9 @@ export interface Facts {
   runs?: { recheck: number; fault_failed: number; repair_passed: number };
   classifications?: { covers_non_pass: boolean | null };
   rules?: { added: number };
+  converted?: { imported: number };
+  convert?: { runs: number; compared_all: boolean | null };
+  cprove?: { clean_passed: number; fault_rejected: number; edge: number };
 }
 
 export function evaluate(rule: string | undefined, f: Facts): boolean | null {
@@ -23,5 +26,9 @@ export function evaluate(rule: string | undefined, f: Facts): boolean | null {
   if ((m = r.match(/^runs\.(recheck|fault_failed|repair_passed)>=(\d+)$/))) return f.runs ? f.runs[m[1] as 'recheck'] >= Number(m[2]) : null;
   if (r === 'classifications.covers_non_pass') return f.classifications ? f.classifications.covers_non_pass : null;
   if ((m = r.match(/^rules\.added>=(\d+)$/))) return f.rules ? f.rules.added >= Number(m[1]) : null;
+  if ((m = r.match(/^converted\.imported>=(\d+)$/))) return f.converted ? f.converted.imported >= Number(m[1]) : null;
+  if ((m = r.match(/^runs\.convert>=(\d+)$/))) return f.convert ? f.convert.runs >= Number(m[1]) : null;
+  if (r === 'convert.compared==all') return f.convert ? f.convert.compared_all : null;
+  if ((m = r.match(/^runs\.cprove_(clean_passed|fault_rejected|edge)>=(\d+)$/))) return f.cprove ? f.cprove[m[1] as 'edge'] >= Number(m[2]) : null;
   return null;
 }

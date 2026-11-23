@@ -28,6 +28,7 @@ export const cfg = {
   jobRecheck: Number(env('DATABRICKS_JOB_RECHECK') || env('DATABRICKS_JOB_ID') || 0),
   jobProve: Number(env('DATABRICKS_JOB_PROVE') || 0),
   jobScan: Number(env('DATABRICKS_JOB_SCAN') || 0),
+  jobConvert: Number(env('DATABRICKS_JOB_CONVERT') || 0),
   servingEndpoint: env('DATABRICKS_SERVING_ENDPOINT_NAME'),
   genieSpaces: {
     results: env('DATABRICKS_GENIE_SPACE_ID'),

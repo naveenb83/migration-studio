@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { chunkCandidates, draftNameFor, fileCandidates, notebookSource } from './lib/geniemigrate';
+import { chunkCandidates, draftNameFor, fileCandidates, notebookSource, sqlSummary } from './lib/geniemigrate';
 
 // FICTIONAL names: the layout matches what Genie Migrate writes, the content is made up.
 const out = '/Workspace/Shared/example/teams/t1/genie_out';
@@ -24,12 +24,19 @@ describe('Genie Migrate converted outputs', () => {
   });
   it('reads the code out of an exported query (Jupyter JSON)', () => {
     const raw = JSON.stringify({ cells: [{ source: ['-- converted\n', 'SELECT 1\n'] }, { source: 'SELECT 2' }] });
-    expect(notebookSource(raw)).toBe('-- converted\nSELECT 1\n\n\nSELECT 2');
+    expect(notebookSource(raw)).toBe('-- converted\nSELECT 1\n;\n\nSELECT 2');
+    expect(notebookSource(JSON.stringify({ cells: [{ source: 'SELECT 1;' }, { source: '/* only notes */' }, { source: 'SELECT 2' }] }))).toBe('SELECT 1;\n\n/* only notes */\n\nSELECT 2');
     expect(notebookSource('SELECT 3')).toBe('SELECT 3');
   });
   it('names drafts after the source file', () => {
     expect(draftNameFor(`${out}/meter_view.dbquery.ipynb`)).toBe('meter_view.sql');
     expect(draftNameFor(`${out}/.lakebridge/chunks/123/chunk_04.sql.converted.dbquery.ipynb`)).toBe('genie_migrate_ssis_part5.sql');
     expect(draftNameFor(`${out}/plain_file.yml`)).toBe('plain_file.yml');
+  });
+  it('summarises a SQL file for the review list', () => {
+    const x = sqlSummary("-- note\nCREATE OR REPLACE VIEW a.v AS SELECT ';' AS s FROM t;\nMERGE INTO edh.d USING s ON 1=1 WHEN MATCHED THEN DELETE;\nDROP TABLE x");
+    expect(x).toMatchObject({ statements: 3, creates: ['VIEW a.v'], writes: ['edh.d'], commentOnly: false });
+    expect(x.warnings[0]).toMatch(/^contains DROP/);
+    expect(sqlSummary('/* yaml:\n  a: 1 */').commentOnly).toBe(true);
   });
 });

@@ -28,6 +28,8 @@ variables:
     description: Job id of the prove job (kit validate-dataset notebook)
   job_scan_id:
     description: Job id of the scan job (scans a team's uploaded code; parses only)
+  job_convert_id:
+    description: Job id of the convert job (runs a team's converted SQL in its sandbox and compares it with legacy)
   serving_endpoint_name:
     description: Model serving endpoint for AI drafts
 
@@ -84,6 +86,10 @@ resources:
         - name: job-scan
           job:
             id: ${var.job_scan_id}
+            permission: CAN_MANAGE_RUN
+        - name: job-convert
+          job:
+            id: ${var.job_convert_id}
             permission: CAN_MANAGE_RUN
         - name: serving-endpoint
           serving_endpoint:

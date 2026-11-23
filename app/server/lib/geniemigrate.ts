@@ -70,7 +70,29 @@ export function notebookSource(raw: string): string {
     return raw; // not JSON: already plain source
   }
   if (!Array.isArray(nb.cells)) return raw;
-  return nb.cells.map((c) => (Array.isArray(c.source) ? c.source.join('') : (c.source ?? ''))).join('\n\n');
+  const cells = nb.cells.map((c) => (Array.isArray(c.source) ? c.source.join('') : (c.source ?? '')));
+  // cells are separate statements: end each code cell with ';' so two statements never run together
+  return cells.map((c, i) => (i < cells.length - 1 && needsTerminator(c) ? `${c.replace(/\s+$/, '')}\n;` : c)).join('\n\n');
+}
+
+/** True when the cell has code that doesn't already end with ';' (comments ignored). */
+export function needsTerminator(cell: string): boolean {
+  const code = cell.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/--[^\n]*/g, ' ').trim();
+  return code.length > 0 && !code.endsWith(';');
+}
+
+/** Quick, approximate summary of a SQL file for the review list (the job does the real, parsed check). */
+export function sqlSummary(text: string): { statements: number; creates: string[]; writes: string[]; commentOnly: boolean; warnings: string[] } {
+  const code = text.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/--[^\n]*/g, ' ').replace(/'(?:[^']|'')*'/g, "''");
+  const statements = code.split(';').map((x) => x.trim()).filter(Boolean);
+  const creates = [...code.matchAll(/\bCREATE\s+(?:OR\s+REPLACE\s+)?(?:TEMP(?:ORARY)?\s+)?(VIEW|TABLE|FUNCTION|PROCEDURE)\s+(?:IF\s+NOT\s+EXISTS\s+)?([`\w.]+)/gi)].map(
+    (m) => `${m[1].toUpperCase()} ${m[2].replace(/`/g, '')}`,
+  );
+  const writes = [...code.matchAll(/\b(?:INSERT\s+(?:INTO|OVERWRITE)(?:\s+TABLE)?|MERGE\s+INTO|UPDATE(?!\s+SET\b)|DELETE\s+FROM|TRUNCATE\s+TABLE)\s+([`\w.]+)/gi)].map((m) => m[1].replace(/`/g, ''));
+  const warnings = [...new Set([...code.matchAll(/\b(DROP|GRANT|REVOKE|COPY\s+INTO|ALTER)\b/gi)].map((m) => m[1].toUpperCase().replace(/\s+/g, ' ')))].map(
+    (w) => `contains ${w}: the app checks every statement before it runs, and blocks what isn't allowed`,
+  );
+  return { statements: statements.length, creates, writes: [...new Set(writes)], commentOnly: statements.length === 0, warnings };
 }
 
 /** Draft file name for an imported Genie Migrate output path. */

@@ -94,14 +94,16 @@ export const genieFolder = (team: TeamT, which: 'genie_in' | 'genie_out') => `${
 /** The public part of the pack: no physical table names, views, or table lists. */
 export function publicPack(): Record<string, unknown> {
   const p = pack() as Record<string, unknown> & Pack;
-  const { dataset, faults, genie_spaces, rule_context, workspace, ...rest } = p as Record<string, unknown> & {
+  const { dataset, faults, genie_spaces, rule_context, workspace, conversion, ...rest } = p as Record<string, unknown> & {
     dataset: Pack['dataset'];
     faults: Pack['faults'];
     genie_spaces?: Record<string, Record<string, unknown>>;
     rule_context?: unknown;
+    conversion?: unknown;
     workspace: Pack['workspace'];
   };
   void rule_context;
+  void conversion; // table templates and SQL: served per team by /api/conversion, never in the public pack
   const { tables, ...datasetPublic } = dataset;
   const genie = Object.fromEntries(
     Object.entries(genie_spaces ?? {}).map(([k, v]) => {

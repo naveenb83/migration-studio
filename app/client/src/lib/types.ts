@@ -120,7 +120,7 @@ export interface RunRow {
   n_blocking: number;
   apply_accepted: boolean | null;
   approval_mode: string | null;
-  kind: 'baseline' | 'recheck' | 'prove' | 'other';
+  kind: 'baseline' | 'recheck' | 'prove' | 'convert' | 'cprove' | 'other';
 }
 
 export interface CheckRow {

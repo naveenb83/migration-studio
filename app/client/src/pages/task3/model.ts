@@ -8,15 +8,17 @@ export const LEVELS = ['L0', 'L1', 'L2', 'L3', 'L4', 'L5', 'L6'] as const;
 export const KIND_LABEL: Record<RunRow['kind'], string> = {
   baseline: 'Baseline',
   recheck: 'Recheck',
-  prove: 'Prove (Task 4)',
+  prove: 'Prove (framework)',
+  convert: 'Run my files (converted SQL)',
+  cprove: 'Prove (converted vs legacy)',
   other: 'Other',
 };
 
 /** Same values the server accepts for kind=classification (docs/03_contracts.md). */
 export const CLASS_OPTIONS: Array<{ value: string; label: string }> = [
-  { value: 'defect', label: 'Defect: our code or mapping is wrong' },
-  { value: 'redesign', label: 'Agreed redesign: an intended difference' },
-  { value: 'inherited_dq', label: 'Inherited data quality: already true in the source' },
+  { value: 'defect', label: 'Conversion defect: the converted code (or our mapping) is wrong' },
+  { value: 'redesign', label: 'Agreed difference: intended, and signed off' },
+  { value: 'inherited_dq', label: 'Legacy quirk: legacy behaves oddly; decide to keep or fix' },
   { value: 'open_question', label: 'Open question: needs a decision' },
 ];
 

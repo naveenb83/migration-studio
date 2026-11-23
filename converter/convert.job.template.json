@@ -1,0 +1,27 @@
+{
+  "name": "migration-studio convert",
+  "description": "Migration Studio: run one team's converted SQL in its sandbox schema and compare the outputs with legacy (Validate), or prove it (gate, planted fault, edge cases).",
+  "max_concurrent_runs": 10,
+  "queue": {"enabled": true},
+  "timeout_seconds": 3600,
+  "parameters": [
+    {"name": "catalog", "default": ""},
+    {"name": "prefix", "default": ""},
+    {"name": "team_dir", "default": ""},
+    {"name": "pack_volume", "default": "<pack volume path, /Volumes/<cat>/<studio>/pack>"},
+    {"name": "run_label", "default": ""},
+    {"name": "mode", "default": "run"},
+    {"name": "fault", "default": ""},
+    {"name": "output_id", "default": ""},
+    {"name": "validator", "default": "<root>/kit/<validator notebook (the kit validate-dataset notebook)>"}
+  ],
+  "tasks": [
+    {
+      "task_key": "convert",
+      "max_retries": 0,
+      "disable_auto_optimization": true,
+      "timeout_seconds": 3600,
+      "notebook_task": {"notebook_path": "<root>/kit/migration_studio_convert", "source": "WORKSPACE"}
+    }
+  ]
+}

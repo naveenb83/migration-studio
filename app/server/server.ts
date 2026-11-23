@@ -6,6 +6,7 @@ import { registerCore } from './routes/core';
 import { registerFac } from './routes/fac';
 import { registerRuns } from './routes/runs';
 import { registerAnalyse } from './routes/analyse';
+import { registerConversion } from './routes/conversion';
 import { registerGenieCode } from './routes/geniecode';
 import { registerUploads } from './routes/uploads';
 import { registerWork } from './routes/work';
@@ -36,6 +37,7 @@ createApp({
       registerUploads(app);
       registerGenieCode(app);
       registerAnalyse(app);
+      registerConversion(app);
       registerFac(app);
     });
   },

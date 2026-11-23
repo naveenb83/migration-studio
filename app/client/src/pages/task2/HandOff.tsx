@@ -20,7 +20,7 @@ interface GM {
   ssis?: Array<{ file: string; parts: number; converted: number }>;
 }
 
-export function HandOff({ onImported }: { onImported: () => void }) {
+export function HandOff({ onImported, onReview }: { onImported: () => void; onReview?: () => void }) {
   const gm = useApi<GM>('/api/genie-migrate');
   const prepared = useApi<Array<{ path: string; size: number }>>('/api/pack/tree?dir=prepared_examples');
   const [paste, setPaste] = useState(false);
@@ -34,6 +34,20 @@ export function HandOff({ onImported }: { onImported: () => void }) {
       const r = await api.post<{ name: string }>('/api/genie-migrate/import', { path });
       notify.ok(`Imported ${r.name} into your drafts (provenance: Genie Migrate).`);
       onImported();
+    } catch (e) {
+      notify.error((e as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  };
+  const importAll = async () => {
+    setBusy('all');
+    try {
+      const r = await api.post<{ imported: Array<{ name: string }>; failed: Array<{ path: string; error: string }> }>('/api/genie-migrate/import-all');
+      if (r.failed.length) notify.error(`Imported ${r.imported.length}; ${r.failed.length} failed: ${r.failed.map((f) => f.error).join('; ')}`);
+      else notify.ok(`Imported ${r.imported.length} converted file(s) into your drafts (provenance: Genie Migrate). Review them next.`);
+      onImported();
+      if (!r.failed.length && r.imported.length) onReview?.();
     } catch (e) {
       notify.error((e as Error).message);
     } finally {
@@ -121,6 +135,9 @@ export function HandOff({ onImported }: { onImported: () => void }) {
           <div className="mb-2 flex items-center justify-between">
             <div className="text-sm font-medium">Converted files in your output folder</div>
             <div className="flex gap-2">
+              <Button size="sm" disabled={busy === 'all' || g.output.length === 0} onClick={() => void importAll()}>
+                <Download className="mr-1 h-3.5 w-3.5" /> Import all ({g.output.length})
+              </Button>
               <Button size="sm" variant="outline" onClick={() => void gm.reload()}>
                 <RefreshCw className="mr-1 h-3.5 w-3.5" /> Refresh
               </Button>
@@ -130,8 +147,8 @@ export function HandOff({ onImported }: { onImported: () => void }) {
             </div>
           </div>
           <div className="mb-2 text-xs text-muted-foreground">
-            Genie Migrate saves each converted file as a SQL query (in the workspace it shows as Type <b>Query</b>). Importing copies the
-            converted code into your drafts. Nothing runs until you adapt a draft and save it as a team file.
+            Genie Migrate saves each converted file as a SQL query (in the workspace it shows as Type <b>Query</b>). Import all copies the
+            converted code into your drafts; then review it in Review &amp; save and run it with Run my files.
           </div>
           {(g.ssis ?? []).map((p) => (
             <div key={p.file} className={`mb-2 rounded-md border px-3 py-2 text-xs ${p.converted < p.parts ? 'border-amber-300 bg-amber-50 text-amber-900' : 'bg-muted/40'}`}>

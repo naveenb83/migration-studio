@@ -15,3 +15,4 @@ targets:
       genie_space_estate_id: <estate-space-id>
       genie_space_data_id: <data-space-id>
       job_scan_id: <scan-job-id>
+      job_convert_id: <convert-job-id>
