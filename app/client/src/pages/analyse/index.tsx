@@ -8,9 +8,13 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import { Alert, AlertDescription, Badge, Button, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Tabs, TabsContent, TabsList, TabsTrigger, Textarea } from '@databricks/appkit-ui/react';
 import { ArrowRight, Download, ExternalLink, FileUp, ListPlus, MessageCircleQuestion, RefreshCw } from 'lucide-react';
-import { CopyButton, EmptyState, ErrorState, Kpi, Loading, PageHeader, Section, fmtTime, notify } from '@/components/common';
+import { CopyButton, EmptyState, ErrorState, Kpi, Loading, PageHeader, Section, TaskHeader, fmtTime, notify } from '@/components/common';
 import { useEntries } from '@/components/register/Register';
 import { api, track } from '@/lib/api';
+import { evaluate } from '@/lib/doneWhen';
+import { useSession, useTask } from '@/lib/me';
+import { computeFacts, type Payload } from '@/pages/task1/facts';
+import { RulesTab } from '@/pages/task1/RulesTab';
 import { useApi } from '@/lib/poll';
 import { DependencyGraph } from './DependencyGraph';
 import { linesText, shortName, type AEdge, type AnalysisModel, type Decision, type ManualDep, type SnapMeta } from './types';
@@ -51,7 +55,12 @@ export default function GenieAnalysePage() {
   const model = useApi<{ meta: SnapMeta; model: AnalysisModel } | null>(`/api/genie-analyse/model${snapId ? `?id=${snapId}` : ''}`, [snapId]);
   const decisionsE = useEntries<Decision>('analysis_decision');
   const manualE = useEntries<ManualDep>('analysis_manual');
-  const lineageE = useEntries<Record<string, unknown>>('lineage_row');
+  const lineageE = useEntries<Payload>('lineage_row');
+  const rulesE = useEntries<Payload>('rule_decision');
+  const questionsE = useEntries<Payload>('question_answer');
+  const progressE = useEntries<{ status?: string }>('task_progress');
+  const me = useSession();
+  const task = useTask('task1');
   const [busy, setBusy] = useState<string | null>(null);
   const [sel, setSel] = useState<string | null>(null);
   const [ev, setEv] = useState<Evidence | null>(null);
@@ -185,7 +194,7 @@ export default function GenieAnalysePage() {
         n++;
       }
       for (const x of manual.filter((x) => decisions.get(x.key)?.decision === 'confirmed')) {
-        await api.post('/api/entries', { kind: 'lineage_row', entry_key: `ga-${x.key}`, payload: { step: String(step++), layer: '', system: '', object: x.to, object_type: '', reads_from: x.from, writes_to: x.to, mechanism: x.op, schedule: '', in_scope: 'yes', notes: `Manual addition in Genie Analyse${x.note ? `: ${x.note}` : ''}`, cited_file: `${x.file}${x.lines ? `#${x.lines}` : ''}`, verified: false } });
+        await api.post('/api/entries', { kind: 'lineage_row', entry_key: `ga-${x.key}`, payload: { step: String(step++), layer: '', system: '', object: x.to, object_type: '', reads_from: x.from, writes_to: x.to, mechanism: x.op, schedule: '', in_scope: 'yes', notes: `Manual addition, confirmed in Genie Analyse${x.note ? `: ${x.note}` : ''}`, cited_file: `${x.file}${x.lines ? `#${x.lines}` : ''}`, verified: true } });
         n++;
       }
       await lineageE.reload();
@@ -198,16 +207,29 @@ export default function GenieAnalysePage() {
     }
   };
 
+  const facts = useMemo(() => computeFacts(lineageE.data ?? [], rulesE.data ?? [], questionsE.data ?? [], me.pack.rules_contract.map((r) => r.key)), [lineageE.data, rulesE.data, questionsE.data, me.pack.rules_contract]);
+  const checks = useMemo(() => Object.fromEntries((task?.done_when ?? []).map((d) => [d.id, evaluate(d.rule, facts)])), [task, facts]);
+  const done = (progressE.data ?? []).some((p) => p.entry_key === 'task1' && p.payload.status === 'done');
+  const markDone = async () => {
+    try {
+      await api.post('/api/entries', { kind: 'task_progress', entry_key: 'task1', payload: { status: 'done' } });
+      await progressE.reload();
+      notify.ok('Task 1 marked done. Next: Task 2 · Convert & run.');
+    } catch (e) {
+      notify.error((e as Error).message);
+    }
+  };
   const o = ov.data;
   const confirmed = m ? m.edges.filter((e) => decisions.get(e.key)?.decision === 'confirmed').length : 0;
   const reviewed = m ? m.edges.filter((e) => decisions.get(e.key)?.decision).length : 0;
   return (
     <div className="space-y-4">
-      <PageHeader title="Genie Analyse: let Genie Migrate find the dependencies" kicker="Task 1 · native analysis (Trace stays as the manual fallback)">
+      <PageHeader title="Genie Analyse: let Genie Migrate find the dependencies" kicker="Task 1, done with Genie Migrate Analyze (Trace is the manual alternative)">
         <Button asChild variant="outline" size="sm">
-          <Link to="/task1">Open Trace</Link>
+          <Link to="/task1">Open Trace instead</Link>
         </Button>
       </PageHeader>
+      {task && <TaskHeader task={task} checks={checks} onMarkDone={() => void markDone()} done={done} />}
 
       <Section title="1 · Run Analyze in the workspace" description="Genie Migrate's Analyze is Beta and runs in the workspace only (no API). It writes analysis.json into the project's output folder; the app imports it from there.">
         <ol className="list-decimal space-y-1 pl-5 text-sm">
@@ -477,17 +499,15 @@ export default function GenieAnalysePage() {
                 <ListPlus className="mr-1 h-4 w-4" /> Write confirmed dependencies to the lineage worksheet
               </Button>
               <Button asChild size="sm" variant="outline">
-                <Link to="/task1">
-                  Next: agree the rules (Task 1) <ArrowRight className="ml-1 h-4 w-4" />
-                </Link>
-              </Button>
-              <Button asChild size="sm" variant="outline">
                 <Link to="/task2">
                   Then convert and run (Task 2) <ArrowRight className="ml-1 h-4 w-4" />
                 </Link>
               </Button>
             </div>
-            <div className="mt-2 text-xs text-muted-foreground">Lineage rows written from here say &ldquo;From Genie Migrate Analyze (native)&rdquo; or &ldquo;Manual addition&rdquo; in their notes, cite the file and lines, and can be edited in the worksheet. Writing again updates the same rows instead of adding duplicates.</div>
+            <div className="mt-2 text-xs text-muted-foreground">Lineage rows written from here say &ldquo;From Genie Migrate Analyze (native)&rdquo; or &ldquo;Manual addition&rdquo; in their notes, cite the file and lines, and count toward Done when. Writing again updates the same rows instead of adding duplicates. ({facts.lineage_rows?.verified ?? 0} verified lineage rows so far.)</div>
+          </Section>
+          <Section title="4 · Agree what “correct” means" description="Agree each rule with your business owner, using what the analysis showed (for example the MERGE key and the status lookup). Same rules as Trace: an edit here shows there too.">
+            <RulesTab contract={me.pack.rules_contract} onChanged={() => void rulesE.reload()} />
           </Section>
         </>
       )}
