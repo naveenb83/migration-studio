@@ -15,3 +15,6 @@ shared/appkit-types/serving.d.ts
 
 # workspace-specific bundle targets (ids, hosts): never commit
 targets.local.yml
+
+# ready-to-deploy build output (app/build_release.sh)
+release/
