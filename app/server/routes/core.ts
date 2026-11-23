@@ -178,7 +178,7 @@ export function registerCore(app: Express): void {
   app.get(
     '/api/pack/tree',
     route(async (req) => {
-      const dir = packRel(String(req.query.dir ?? 'legacy'));
+      const dir = packRel(typeof req.query.dir === 'string' ? req.query.dir : 'legacy');
       const files = await walk(`${cfg.packVolume}/${dir}`, 400);
       return files.map((f) => ({ path: f.path.slice(cfg.packVolume.length + 1), size: f.size }));
     }),
@@ -186,7 +186,7 @@ export function registerCore(app: Express): void {
   app.get(
     '/api/pack/file',
     route(async (req) => {
-      const rel = packRel(String(req.query.path ?? ''));
+      const rel = packRel(typeof req.query.path === 'string' ? req.query.path : '');
       const text = await readText(`${cfg.packVolume}/${rel}`);
       return { path: rel, content: text.slice(0, 600_000), truncated: text.length > 600_000 };
     }),

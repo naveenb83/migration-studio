@@ -14,6 +14,14 @@ Placeholders: `{cat}` catalog, `{studio}` app schema, `{prefix}` team schema pre
 > - Approvals are rows plus the classroom toggle. **No YAML is patched by the app.**
 > - **The client never sends table names.** Analytics **cache is off**.
 
+> **Revision 3 (23 Nov, as built).**
+> - The analytics plugin is not used: every read is a server route (§9 and §10 below are implemented as routes:
+>   `/api/runs`, `/api/runs/:label/{checks,samples/:check,explanation/:check,artifacts}`, `/api/compare`, `/api/requests`,
+>   `/api/home`, `/api/estate/:table`, `/api/estate-graphs`, `/api/estate-graph/:id`, `/api/pack/{tree,file}`,
+>   `GET /api/entries?kind=`, `/api/roster`, `/api/setup/check`, `/api/prepared`).
+> - `DATABRICKS_VOLUME_PACK` may be `catalog.schema.volume` (the app resource value); the catalog and studio schema come from it.
+> - Run labels for seed explanation runs start with `seed_`; they are hidden from the run list and used only as the explanation fallback.
+
 ## 1. Engagement pack (`pack.json`)
 The app is generic. Everything customer-specific comes from `pack.json` (plus files beside it) in the **pack volume**
 (`DATABRICKS_VOLUME_PACK`). The schema is `pack/pack.schema.json`, and a fictional example is `pack/example/pack.json`.

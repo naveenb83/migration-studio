@@ -46,16 +46,16 @@ Resume file. **Read this first** if a session restarts, then `AGENTS.md`, then y
 ## Work packages (N = 5 builders + 1 integrator/QA; Naveen owns admin requests and go/no-go)
 | WP | Brief | Starts | Tier | Status |
 |---|---|---|---|---|
-| WP0 Backbone + contracts + canary | `docs/wp/WP0_backbone.md` | 12:30 | A | todo |
-| WP1 Kit jobs + pack + prepared assets | `docs/wp/WP1_kit_jobs.md` | 12:30 | A | todo |
-| WP2 Estate scanner (offline) | `docs/wp/WP2_estate_scanner.md` | 12:30 | B | todo |
-| WP3 UI: Home, Setup, Task 1, Estate | `docs/wp/WP3_ui_assess_estate.md` | G1 | A/B | todo |
-| WP4 UI: Task 2 Convert, Task 4 Prove | `docs/wp/WP4_ui_convert_prove.md` | G1 | A | todo |
-| WP5 UI: Task 3 Validate, Genie, registers, Close, Facilitator | `docs/wp/WP5_ui_validate_genie_fac.md` | G1 | A/B | todo |
-| WP6 Assistant (agents beta) | `docs/wp/WP6_assistant.md` | after G3, if time | C | todo |
-| WP7 Genie spaces | `docs/wp/WP7_genie_spaces.md` | ~14:30 | A (results) / B | todo |
-| WP8 Deploy + rehearsals | `docs/wp/WP8_deploy_rehearsal.md` | canary at G1; full at G3 | A | todo |
-| QA Integrator | `docs/10_test_plan.md` | G1 | A | todo |
+| WP0 Backbone + contracts + canary | `docs/wp/WP0_backbone.md` | 12:30 | A | done (build ws) |
+| WP1 Kit jobs + pack + prepared assets | `docs/wp/WP1_kit_jobs.md` | 12:30 | A | done (build ws) |
+| WP2 Estate scanner (offline) | `docs/wp/WP2_estate_scanner.md` | 12:30 | B | done |
+| WP3 UI: Home, Setup, Task 1, Estate | `docs/wp/WP3_ui_assess_estate.md` | G1 | A/B | done |
+| WP4 UI: Task 2 Convert, Task 4 Prove | `docs/wp/WP4_ui_convert_prove.md` | G1 | A | done |
+| WP5 UI: Task 3 Validate, Genie, registers, Close, Facilitator | `docs/wp/WP5_ui_validate_genie_fac.md` | G1 | A/B | done |
+| WP6 Assistant (agents beta) | `docs/wp/WP6_assistant.md` | after G3, if time | C | not started (Tier C, flag off) |
+| WP7 Genie spaces | `docs/wp/WP7_genie_spaces.md` | ~14:30 | A (results) / B | done (3 spaces) |
+| WP8 Deploy + rehearsals | `docs/wp/WP8_deploy_rehearsal.md` | canary at G1; full at G3 | A | build ws done; delivery pending |
+| QA Integrator | `docs/10_test_plan.md` | G1 | A | e2e 26/26 + browser sweep |
 
 ```
 WP0 ──┬─▶ WP3 ─┐
@@ -94,5 +94,14 @@ If Tier A fails at G4, the app becomes a **read-only scoreboard + Genie**, and t
 ## Status log
 - 2026-11-23 11:20: plan agreed with Naveen (full build today; generic repo; Delta state; Genie Migrate hand-off + assistant).
 - 2026-11-23 12:36: plan pack rev 2 pushed to the private repo `naveenb83/migration-studio`. Revised after the stress-test review: reuse notebooks as jobs; per-team storage + union views; 3 state tables; Prove on team rules; security fixes; cache off.
-- **NEXT:** WP0, WP1 and WP2 in parallel.
-- **Needed from Naveen by G0:** the delivery workspace profile, attendee group, 3 external test users, facilitator emails, and the least-privilege job service principal (or an admin who can create it).
+- 2026-11-23 13:00–14:40: full build in the BUILD workspace (Naveen: "build on default and run it end to end first").
+  - Kit: `run_label` widget; answer-key table no longer written to team schemas; recheck + prove jobs (max_retries 0, no auto-optimisation retry);
+    fault views; 5 vetted rule templates; prove matrix verified (clean 5/0; faults 2/3, 3/2, 3/2, 4/1); 4 prefixes provisioned (baseline 10/15/9/0/0 each);
+    seed AI explanations (15 per team); prepared examples.
+  - App deployed (`migration-studio`): all pages, 9 resources, 3 Genie spaces. Server routes do every read/write (no jobs/files/analytics plugin routes).
+    Client libraries are optional deps + prebuilt bundle (Apps npm proxy refused zustand 4.5.7 / yaml 2.9.1).
+  - **e2e against the deployed app: 26/26** (`tests/e2e_api.py`): as-built 19/6/9/0/0; fixed + classroom 27/0/5/2/0 (SIMULATED); prove clean → fault gate_rejected
+    with the affected key → clean; one-run-per-team guard; save validation; import/paste/prepared; explanations; export; board; health. Genie answers via OBO.
+  - Runbook for the next workspace: `docs/12_runbook_new_workspace.md`.
+- **NEXT:** pick the delivery workspace, then repeat the runbook there (steps 1–15) with the delivery pack; run the e2e + a non-admin pass.
+- **Still needed for delivery:** the delivery workspace profile, attendee group, 3 external test users, facilitator emails, and the least-privilege job service principal (or an admin who can create it).

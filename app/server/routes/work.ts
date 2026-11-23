@@ -244,7 +244,7 @@ export function registerWork(app: Express): void {
         body: JSON.stringify({ messages: [{ role: 'system', content: system }, { role: 'user', content: user }], max_tokens: 4000, stream: true }),
       });
       if (!r.ok || !r.body) throw new Error(`Model endpoint returned ${r.status}: ${(await r.text()).slice(0, 300)}`);
-      const reader = r.body.getReader();
+      const reader: ReadableStreamDefaultReader<Uint8Array> = r.body.getReader();
       const dec = new TextDecoder();
       let buf = '';
       let all = '';

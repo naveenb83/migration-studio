@@ -96,7 +96,7 @@ export function registerFac(app: Express): void {
       };
       return Promise.all([
         check('SQL warehouse', async () => `${(await query<{ ok: number }>('SELECT 1 AS ok'))[0]?.ok === 1 ? 'responding' : 'odd result'}`),
-        check('Pack', async () => `${pack().engagement.title}, loaded ${packLoadedAt()}`),
+        check('Pack', () => Promise.resolve(`${pack().engagement.title}, loaded ${packLoadedAt()}`)),
         check('Results views', async () => `${(await query<{ n: number }>(`SELECT count(*) AS n FROM ${fq('v_run_log')}`))[0]?.n} runs across teams`),
         check('Recheck job', async () => (await c.jobs.get({ job_id: cfg.jobRecheck })).settings?.name ?? 'ok'),
         check('Prove job', async () => (cfg.jobProve ? ((await c.jobs.get({ job_id: cfg.jobProve })).settings?.name ?? 'ok') : 'not configured')),
@@ -183,12 +183,12 @@ export function registerFac(app: Express): void {
         '## Team files (what the recheck executes)', '| File | SHA-256 | Source | Saved by | When |', '|---|---|---|---|---|',
         ...files.map((f) => `| ${f.file} | \`${f.sha256.slice(0, 16)}\` | ${f.source} | ${f.saved_by} | ${f.ts} |`), '',
         '## Labelled runs', '| Run label | PASS | FAIL | WARN | INFO | ERROR | Classroom |', '|---|---|---|---|---|---|---|',
-        ...runs.map((r) => `| ${r.run_label} | ${r.n_pass} | ${r.n_fail} | ${r.n_warn} | ${r.n_info} | ${r.n_error} | ${r.apply_accepted ? 'SIMULATED' : ''} |`), '',
+        ...runs.map((r) => `| ${String(r.run_label)} | ${String(r.n_pass)} | ${String(r.n_fail)} | ${String(r.n_warn)} | ${String(r.n_info)} | ${String(r.n_error)} | ${r.apply_accepted ? 'SIMULATED' : ''} |`), '',
         '## Classifications', ...classes.map((r) => `- **${r.entry_key}**: ${kv(r.payload)}`), '',
         '## Open questions', ...questions.map((r) => `- **${r.entry_key}**: ${kv(r.payload)}`), '',
         '## Close-out', ...closeout.map((r) => `- **${r.entry_key}**: ${kv(r.payload)}`), '',
       ].join('\n');
-      const csv = ['run_label,n_pass,n_fail,n_warn,n_info,n_error,n_blocking,run_ts', ...runs.map((r) => [r.run_label, r.n_pass, r.n_fail, r.n_warn, r.n_info, r.n_error, r.n_blocking, r.run_ts].join(','))].join('\n');
+      const csv = ['run_label,n_pass,n_fail,n_warn,n_info,n_error,n_blocking,run_ts', ...runs.map((r) => [r.run_label, r.n_pass, r.n_fail, r.n_warn, r.n_info, r.n_error, r.n_blocking, r.run_ts].map((v) => (v === null || v === undefined ? '' : typeof v === 'object' ? JSON.stringify(v) : String(v as string | number | boolean))).join(','))].join('\n');
       const stamp = new Date().toISOString().replace(/[:.]/g, '-');
       let saved: string | null = null;
       if (cfg.exportsVolume) {
