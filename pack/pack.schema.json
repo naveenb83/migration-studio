@@ -1,0 +1,899 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/migration-studio/pack.schema.json",
+  "title": "Migration Studio engagement pack",
+  "type": "object",
+  "required": [
+    "pack_version",
+    "engagement",
+    "workspace",
+    "teams",
+    "demo_team",
+    "dataset",
+    "manifest",
+    "recon",
+    "faults",
+    "agenda",
+    "tasks",
+    "rules_contract",
+    "lineage_template",
+    "prompts",
+    "questions",
+    "findings",
+    "outcomes",
+    "pipelines_landing",
+    "closeout_questions",
+    "pilot",
+    "genie_migrate",
+    "genie_spaces",
+    "assistant",
+    "estate",
+    "features"
+  ],
+  "properties": {
+    "pack_version": {
+      "const": 1
+    },
+    "engagement": {
+      "type": "object",
+      "required": [
+        "id",
+        "title",
+        "customer_label",
+        "date",
+        "timezone",
+        "facilitators",
+        "attendee_group",
+        "disclaimer"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9-]{3,40}$"
+        },
+        "title": {
+          "type": "string"
+        },
+        "customer_label": {
+          "type": "string"
+        },
+        "date": {
+          "type": "string",
+          "format": "date"
+        },
+        "timezone": {
+          "type": "string"
+        },
+        "facilitators": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "email"
+          },
+          "minItems": 1
+        },
+        "attendee_group": {
+          "type": "string"
+        },
+        "disclaimer": {
+          "type": "string"
+        }
+      }
+    },
+    "workspace": {
+      "type": "object",
+      "required": [
+        "catalog",
+        "studio_schema",
+        "results_schema",
+        "root"
+      ],
+      "properties": {
+        "catalog": {
+          "type": "string"
+        },
+        "studio_schema": {
+          "type": "string"
+        },
+        "results_schema": {
+          "type": "string"
+        },
+        "root": {
+          "type": "string",
+          "pattern": "^/Workspace/"
+        }
+      }
+    },
+    "teams": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/team"
+      }
+    },
+    "demo_team": {
+      "$ref": "#/$defs/team"
+    },
+    "dataset": {
+      "type": "object",
+      "required": [
+        "id",
+        "title",
+        "summary",
+        "grain_legacy",
+        "grain_new",
+        "tables"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "summary": {
+          "type": "string"
+        },
+        "grain_legacy": {
+          "type": "string"
+        },
+        "grain_new": {
+          "type": "string"
+        },
+        "tables": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "pattern": "\\{cat\\}\\.\\{prefix\\}"
+          }
+        },
+        "lanes": {
+          "type": "object",
+          "properties": {
+            "legacy": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/lane_node"
+              }
+            },
+            "new": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/lane_node"
+              }
+            }
+          }
+        }
+      }
+    },
+    "manifest": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "artifact",
+          "file",
+          "required",
+          "kind"
+        ],
+        "properties": {
+          "artifact": {
+            "type": "string"
+          },
+          "file": {
+            "type": "string"
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "kind": {
+            "enum": [
+              "view_sql",
+              "framework_yaml",
+              "recon_yaml"
+            ]
+          },
+          "view_schema": {
+            "type": "string"
+          },
+          "allowed_mechanisms": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "recon": {
+      "type": "object",
+      "required": [
+        "config_file",
+        "check_layer_map",
+        "layers",
+        "expected_scorecards"
+      ],
+      "properties": {
+        "config_file": {
+          "type": "string"
+        },
+        "check_layer_map": {
+          "type": "object",
+          "additionalProperties": {
+            "enum": [
+              "R1",
+              "R2",
+              "R3"
+            ]
+          }
+        },
+        "layers": {
+          "type": "object",
+          "required": [
+            "R1",
+            "R2",
+            "R3"
+          ],
+          "additionalProperties": {
+            "type": "object",
+            "required": [
+              "title",
+              "compares",
+              "question",
+              "how"
+            ],
+            "properties": {
+              "title": {
+                "type": "string"
+              },
+              "compares": {
+                "type": "string"
+              },
+              "question": {
+                "type": "string"
+              },
+              "how": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "expected_scorecards": {
+          "type": "object",
+          "required": [
+            "baseline",
+            "after_fix"
+          ],
+          "additionalProperties": {
+            "$ref": "#/$defs/scorecard"
+          }
+        }
+      }
+    },
+    "faults": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "label",
+          "description"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z_]+$"
+          },
+          "label": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "agenda": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "start",
+          "end",
+          "title"
+        ],
+        "properties": {
+          "start": {
+            "type": "string",
+            "pattern": "^\\d{1,2}:\\d{2}$"
+          },
+          "end": {
+            "type": "string",
+            "pattern": "^\\d{1,2}:\\d{2}$"
+          },
+          "title": {
+            "type": "string"
+          },
+          "task_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "outputs": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "tasks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "kicker",
+          "minutes",
+          "steps",
+          "done_when",
+          "watch_for"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "kicker": {
+            "type": "string"
+          },
+          "minutes": {
+            "type": "integer"
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "done_when": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "label"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "rule": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "watch_for": {
+            "type": "string"
+          },
+          "fallback": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "rules_contract": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "key",
+          "label"
+        ],
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "help": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "lineage_template": {
+      "type": "object",
+      "required": [
+        "columns",
+        "seed_rows"
+      ],
+      "properties": {
+        "columns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "seed_rows": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    "prompts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "text"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "questions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "group",
+          "question",
+          "why",
+          "who",
+          "priority"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "group": {
+            "type": "string"
+          },
+          "question": {
+            "type": "string"
+          },
+          "why": {
+            "type": "string"
+          },
+          "who": {
+            "type": "string"
+          },
+          "priority": {
+            "enum": [
+              "high",
+              "medium",
+              "low"
+            ]
+          }
+        }
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "noticed",
+          "why",
+          "decision"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "noticed": {
+            "type": "string"
+          },
+          "why": {
+            "type": "string"
+          },
+          "decision": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "outcomes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "challenge",
+          "today",
+          "measure"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "challenge": {
+            "type": "string"
+          },
+          "today": {
+            "type": "string"
+          },
+          "measure": {
+            "enum": [
+              "time_per_step",
+              "assets_created",
+              "blocker_coverage",
+              "destinations_assigned"
+            ]
+          }
+        }
+      }
+    },
+    "pipelines_landing": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "today",
+          "goes_to",
+          "check"
+        ],
+        "properties": {
+          "today": {
+            "type": "string"
+          },
+          "goes_to": {
+            "type": "string"
+          },
+          "check": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "closeout_questions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1
+    },
+    "pilot": {
+      "type": "object",
+      "required": [
+        "takeaways",
+        "pilot",
+        "before_production"
+      ],
+      "properties": {
+        "takeaways": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "pilot": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "before_production": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "genie_migrate": {
+      "type": "object",
+      "required": [
+        "url",
+        "input_folder",
+        "output_folder",
+        "steps",
+        "ssis_preview"
+      ],
+      "properties": {
+        "url": {
+          "type": "string"
+        },
+        "input_folder": {
+          "type": "string"
+        },
+        "output_folder": {
+          "type": "string"
+        },
+        "steps": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "ssis_preview": {
+          "type": "boolean"
+        },
+        "prepared_example_dir": {
+          "type": "string"
+        }
+      }
+    },
+    "genie_spaces": {
+      "type": "object",
+      "required": [
+        "results"
+      ],
+      "properties": {
+        "results": {
+          "$ref": "#/$defs/space"
+        },
+        "estate": {
+          "$ref": "#/$defs/space"
+        },
+        "data": {
+          "$ref": "#/$defs/space"
+        }
+      }
+    },
+    "assistant": {
+      "type": "object",
+      "required": [
+        "skill_dirs"
+      ],
+      "properties": {
+        "skill_dirs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "extra_instructions": {
+          "type": "string"
+        },
+        "draft_endpoint": {
+          "type": "string"
+        }
+      }
+    },
+    "estate": {
+      "type": "object",
+      "required": [
+        "code_dirs",
+        "dataset_status"
+      ],
+      "properties": {
+        "code_dirs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "dataset_status": {
+          "type": "object",
+          "additionalProperties": {
+            "enum": [
+              "migrated",
+              "in_progress",
+              "not_started"
+            ]
+          }
+        },
+        "sql_instances": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "features": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "boolean"
+      }
+    },
+    "rule_templates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "label",
+          "sql"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "level": {
+            "type": "string"
+          },
+          "severity": {
+            "enum": [
+              "FAIL",
+              "WARN",
+              "INFO"
+            ]
+          },
+          "expect": {
+            "type": "string"
+          },
+          "params": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "name",
+                "label"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "default": {},
+                "options": {
+                  "type": "array"
+                }
+              }
+            }
+          },
+          "sql": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "team": {
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "prefix"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9_]{2,20}$"
+        },
+        "name": {
+          "type": "string"
+        },
+        "prefix": {
+          "type": "string",
+          "pattern": "^[a-z0-9_]+_$"
+        },
+        "group": {
+          "type": "string"
+        }
+      }
+    },
+    "scorecard": {
+      "type": "object",
+      "required": [
+        "pass",
+        "fail",
+        "warn",
+        "info",
+        "error"
+      ],
+      "properties": {
+        "pass": {
+          "type": "integer"
+        },
+        "fail": {
+          "type": "integer"
+        },
+        "warn": {
+          "type": "integer"
+        },
+        "info": {
+          "type": "integer"
+        },
+        "error": {
+          "type": "integer"
+        }
+      }
+    },
+    "lane_node": {
+      "type": "object",
+      "required": [
+        "id",
+        "label"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "code_path": {
+          "type": "string"
+        },
+        "table": {
+          "type": "string"
+        }
+      }
+    },
+    "space": {
+      "type": "object",
+      "required": [
+        "title",
+        "instructions",
+        "tables",
+        "sample_questions"
+      ],
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "instructions": {
+          "type": "string"
+        },
+        "tables": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "sample_questions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "benchmarks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "question"
+            ],
+            "properties": {
+              "question": {
+                "type": "string"
+              },
+              "expected_sql": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

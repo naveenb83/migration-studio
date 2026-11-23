@@ -1,0 +1,548 @@
+{
+  "pack_version": 1,
+  "engagement": {
+    "id": "example-water-ws",
+    "title": "Example Water Co: migration workshop (fictional)",
+    "customer_label": "Example Water Co",
+    "date": "2026-12-01",
+    "timezone": "Australia/Brisbane",
+    "facilitators": [
+      "facilitator@example.com"
+    ],
+    "attendee_group": "example-attendees",
+    "disclaimer": "Fictional sample pack for local development and tests. Synthetic data only."
+  },
+  "workspace": {
+    "catalog": "dev_catalog",
+    "studio_schema": "studio",
+    "results_schema": "studio",
+    "root": "/Workspace/Shared/example-water-ws"
+  },
+  "teams": [
+    {
+      "id": "team1",
+      "name": "Team 1",
+      "prefix": "exw_team1_"
+    },
+    {
+      "id": "team2",
+      "name": "Team 2",
+      "prefix": "exw_team2_"
+    },
+    {
+      "id": "rehearsal",
+      "name": "Rehearsal",
+      "prefix": "exw_rehearsal_"
+    }
+  ],
+  "demo_team": {
+    "id": "demo",
+    "name": "Facilitator demo",
+    "prefix": "exw_demo_"
+  },
+  "dataset": {
+    "id": "asset_inspection",
+    "title": "Asset inspections",
+    "summary": "Field inspections of water assets, moved from a SQL Server data hub to a Databricks medallion framework.",
+    "grain_legacy": "one row per asset (latest inspection pivoted into columns)",
+    "grain_new": "one row per asset inspection",
+    "tables": {
+      "legacy_dim": "{cat}.{prefix}legacy_hub.dim_asset_inspection",
+      "stage_view": "{cat}.{prefix}stage_views.vw_asset_inspection",
+      "edh_fact": "{cat}.{prefix}core.fact_asset_inspection",
+      "consumer_view": "{cat}.{prefix}consumer_views.asset_inspection"
+    },
+    "lanes": {
+      "legacy": [
+        {
+          "id": "src",
+          "label": "Field app DB"
+        },
+        {
+          "id": "ssis",
+          "label": "Shared SSIS package",
+          "code_path": "legacy/asset_load.dtsx"
+        },
+        {
+          "id": "proc",
+          "label": "MERGE procedure",
+          "code_path": "legacy/usp_merge_asset_inspection.sql"
+        },
+        {
+          "id": "dim",
+          "label": "One row per asset",
+          "table": "legacy_dim"
+        },
+        {
+          "id": "rpt",
+          "label": "Reports"
+        }
+      ],
+      "new": [
+        {
+          "id": "replica",
+          "label": "Source replica"
+        },
+        {
+          "id": "stage",
+          "label": "Stage view",
+          "table": "stage_view"
+        },
+        {
+          "id": "edh",
+          "label": "Core fact (framework YAML)",
+          "table": "edh_fact"
+        },
+        {
+          "id": "fact",
+          "label": "One row per inspection",
+          "table": "consumer_view"
+        },
+        {
+          "id": "rpt2",
+          "label": "Reports"
+        }
+      ]
+    }
+  },
+  "manifest": [
+    {
+      "artifact": "stage_view",
+      "file": "10_stage_asset_inspection_view.sql",
+      "required": true,
+      "kind": "view_sql",
+      "view_schema": "stage_views"
+    },
+    {
+      "artifact": "core_yaml",
+      "file": "20_core_asset_inspection.yml",
+      "required": true,
+      "kind": "framework_yaml",
+      "allowed_mechanisms": [
+        "type1_upsert",
+        "type1_upsert_delete",
+        "insert_only"
+      ]
+    },
+    {
+      "artifact": "recon",
+      "file": "recon.yml",
+      "required": false,
+      "kind": "recon_yaml"
+    }
+  ],
+  "recon": {
+    "config_file": "recon.yml",
+    "check_layer_map": {
+      "replica_row_counts_match": "R1",
+      "inspections_missing": "R2",
+      "consumer_view_matches_core": "R3"
+    },
+    "layers": {
+      "R1": {
+        "title": "Ingestion",
+        "compares": "Source tables and the replica",
+        "question": "Did the copy arrive complete and unchanged?",
+        "how": "Exact row and value compare"
+      },
+      "R2": {
+        "title": "Transformation",
+        "compares": "Legacy table and the new core fact",
+        "question": "Did the business logic carry over?",
+        "how": "Roll the new table up to the legacy grain; compare shared columns; record agreed differences"
+      },
+      "R3": {
+        "title": "Reports",
+        "compares": "Report results and the consumer view",
+        "question": "Do users get the same answers?",
+        "how": "Top report queries, run on both sides"
+      }
+    },
+    "expected_scorecards": {
+      "baseline": {
+        "pass": 4,
+        "fail": 3,
+        "warn": 1,
+        "info": 0,
+        "error": 0
+      },
+      "after_fix": {
+        "pass": 7,
+        "fail": 0,
+        "warn": 1,
+        "info": 0,
+        "error": 0
+      },
+      "recheck_as_built": {
+        "pass": 5,
+        "fail": 2,
+        "warn": 1,
+        "info": 0,
+        "error": 0
+      }
+    }
+  },
+  "faults": [
+    {
+      "id": "wrong_id",
+      "label": "Wrong inspection ID",
+      "description": "Changes one inspection id in a copy of the candidate"
+    },
+    {
+      "id": "wrong_value",
+      "label": "Wrong reading",
+      "description": "Changes one measured value"
+    },
+    {
+      "id": "deleted_record",
+      "label": "Deleted inspection",
+      "description": "Removes one inspection"
+    },
+    {
+      "id": "consumer_value",
+      "label": "Corrupted report value",
+      "description": "Changes one value in the consumer table"
+    }
+  ],
+  "agenda": [
+    {
+      "start": "0:00",
+      "end": "0:15",
+      "title": "Welcome, access check, first scorecard",
+      "task_id": null,
+      "outputs": "A working team area"
+    },
+    {
+      "start": "0:15",
+      "end": "0:40",
+      "title": "Task 1 · Trace the flow",
+      "task_id": "task1",
+      "outputs": "Dependency map and boundary"
+    },
+    {
+      "start": "0:40",
+      "end": "1:30",
+      "title": "Task 2 · Agree the rules, convert and run",
+      "task_id": "task2",
+      "outputs": "Your own files, running"
+    },
+    {
+      "start": "1:30",
+      "end": "1:40",
+      "title": "Break",
+      "task_id": null,
+      "outputs": ""
+    },
+    {
+      "start": "1:40",
+      "end": "2:30",
+      "title": "Task 3 · Investigate and repair",
+      "task_id": "task3",
+      "outputs": "Every difference explained"
+    },
+    {
+      "start": "2:30",
+      "end": "3:05",
+      "title": "Task 4 · Write a rule, break it, repair it",
+      "task_id": "task4",
+      "outputs": "A test that catches a bad result"
+    },
+    {
+      "start": "3:05",
+      "end": "3:30",
+      "title": "Teach-back, pilot and owners",
+      "task_id": "close",
+      "outputs": "Named pilot owners"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "task1",
+      "title": "Task 1: trace one flow and agree what \"correct\" means",
+      "kicker": "25 minutes · boundary and target contract",
+      "minutes": 25,
+      "steps": [
+        "Open the legacy code: source tables, procedure, shared package, schedule.",
+        "Trace the flow and check each answer against the code.",
+        "Agree the rules with your business owner.",
+        "Note what else the shared package loads."
+      ],
+      "done_when": [
+        {
+          "id": "lineage",
+          "label": "Lineage worksheet filled in, each line backed by the code",
+          "rule": "lineage_rows.verified>=6"
+        },
+        {
+          "id": "rules",
+          "label": "Rules agreed and written down",
+          "rule": "rule_decisions.agreed==all"
+        }
+      ],
+      "watch_for": "Migrating one dataset alone doesn't free the shared package."
+    },
+    {
+      "id": "task2",
+      "title": "Task 2: convert, review, save and run",
+      "kicker": "50 minutes · your saved files are what gets scored",
+      "minutes": 50,
+      "steps": [
+        "Convert one view or procedure and review the differences.",
+        "Draft the stage view and framework YAML.",
+        "Save the files in your team area.",
+        "Run your files."
+      ],
+      "done_when": [
+        {
+          "id": "saved",
+          "label": "Your saved files ran",
+          "rule": "runs.recheck>=1"
+        }
+      ],
+      "watch_for": "No conversion access? Use the prepared example.",
+      "fallback": "Prepared example"
+    },
+    {
+      "id": "task3",
+      "title": "Task 3: find what's wrong, and what's just different",
+      "kicker": "50 minutes · investigate and repair",
+      "minutes": 50,
+      "steps": [
+        "Open the first scorecard.",
+        "Investigate with affected keys and sample rows.",
+        "Classify every difference.",
+        "Fix your files and run again."
+      ],
+      "done_when": [
+        {
+          "id": "classified",
+          "label": "Every difference has an owner and evidence",
+          "rule": "classifications.covers_non_pass"
+        }
+      ],
+      "watch_for": "Matching row counts don't prove values belong to the right record."
+    },
+    {
+      "id": "task4",
+      "title": "Task 4: prove your test catches a bad result",
+      "kicker": "35 minutes · a useful test rejects a bad result",
+      "minutes": 35,
+      "steps": [
+        "Write one validation rule.",
+        "Break your own copy on purpose.",
+        "Run it: the gate should reject that exact run.",
+        "Repair, run again, swap drivers."
+      ],
+      "done_when": [
+        {
+          "id": "fault",
+          "label": "One failing run saved",
+          "rule": "runs.fault_failed>=1"
+        },
+        {
+          "id": "repair",
+          "label": "One passing run saved",
+          "rule": "runs.repair_passed>=1"
+        }
+      ],
+      "watch_for": "A check that can't measure must fail, not pass."
+    }
+  ],
+  "rules_contract": [
+    {
+      "key": "record_key",
+      "label": "Inspection key",
+      "help": "Which columns identify one inspection?"
+    },
+    {
+      "key": "eligible",
+      "label": "Eligible records",
+      "help": "Which assets and inspections are in scope?"
+    },
+    {
+      "key": "date_precision",
+      "label": "Date precision",
+      "help": "Date or timestamp? Which timezone?"
+    }
+  ],
+  "lineage_template": {
+    "columns": [
+      "step",
+      "layer",
+      "system",
+      "object",
+      "object_type",
+      "reads_from",
+      "writes_to",
+      "schedule",
+      "mechanism",
+      "in_scope",
+      "notes",
+      "cited_file"
+    ],
+    "seed_rows": [
+      {
+        "step": 1,
+        "layer": "Source",
+        "system": "Field app DB",
+        "object": "inspections",
+        "object_type": "table"
+      }
+    ]
+  },
+  "prompts": [
+    {
+      "id": "A1",
+      "title": "Inventory",
+      "text": "List every object in this folder with its type and the objects it reads and writes. Cite the file for each row."
+    },
+    {
+      "id": "A2",
+      "title": "Explain the package",
+      "text": "Explain the SSIS package: what it loads, in what order, and which procedures it calls. List every dataset it loads."
+    }
+  ],
+  "questions": [
+    {
+      "id": "Q1",
+      "group": "Scope and design",
+      "question": "How many packages, procedures and jobs are in scope, and which come next?",
+      "why": "Sizing and retirement order",
+      "who": "Platform lead",
+      "priority": "high"
+    }
+  ],
+  "findings": [
+    {
+      "id": "F1",
+      "noticed": "The transformation is scheduled before the ingest",
+      "why": "Reports would show yesterday's data",
+      "decision": "Make the workflow wait for the ingest"
+    }
+  ],
+  "outcomes": [
+    {
+      "id": "o1",
+      "challenge": "Migration is slower and costlier than planned",
+      "today": "We time each step and note rework",
+      "measure": "time_per_step"
+    },
+    {
+      "id": "o2",
+      "challenge": "New demand waits behind migration",
+      "today": "Reusable guidance and tests",
+      "measure": "assets_created"
+    },
+    {
+      "id": "o3",
+      "challenge": "Shared legacy jobs keep the servers running",
+      "today": "Map what each shared job still feeds",
+      "measure": "blocker_coverage"
+    },
+    {
+      "id": "o4",
+      "challenge": "Much of the engineering sits outside Databricks",
+      "today": "Give each pipeline a destination",
+      "measure": "destinations_assigned"
+    }
+  ],
+  "pipelines_landing": [
+    {
+      "today": "SSIS packages",
+      "goes_to": "Supported ingestion for data movement; framework code for transformations",
+      "check": "Inventory every task"
+    },
+    {
+      "today": "SQL Agent jobs",
+      "goes_to": "Databricks jobs that wait for their inputs",
+      "check": "A clock time alone doesn't prove the data has arrived"
+    }
+  ],
+  "closeout_questions": [
+    "Which saved files ran, and which steps still needed manual engineering?",
+    "Where did the time go today?"
+  ],
+  "pilot": {
+    "takeaways": [
+      "Dependency map",
+      "Reviewed files",
+      "Your validation rules"
+    ],
+    "pilot": [
+      "2–3 datasets with named owners",
+      "Effort measured per step"
+    ],
+    "before_production": [
+      "Agreed tests pass",
+      "Consumers confirm"
+    ]
+  },
+  "genie_migrate": {
+    "url": "https://<workspace-host>/",
+    "input_folder": "{root}/teams/{team}/genie_in",
+    "output_folder": "{root}/teams/{team}/genie_out",
+    "steps": [
+      "Create a Migration Project",
+      "Source: SQL Server",
+      "Input: your team's legacy_code folder",
+      "Target: Databricks SQL (select explicitly)",
+      "Run, then save output to genie_migrate_out"
+    ],
+    "ssis_preview": false,
+    "prepared_example_dir": "prepared_examples"
+  },
+  "genie_spaces": {
+    "results": {
+      "title": "Validation results",
+      "instructions": "Blocking statuses are FAIL and ERROR. Filter by target_prefix and run_label.",
+      "tables": [
+        "{cat}.studio.v_check_results",
+        "{cat}.studio.v_run_log"
+      ],
+      "sample_questions": [
+        "Which checks failed in our last labelled run?"
+      ]
+    }
+  },
+  "assistant": {
+    "skill_dirs": [
+      "skills/example-framework"
+    ],
+    "extra_instructions": "Target framework: YAML-configured medallion layers."
+  },
+  "estate": {
+    "code_dirs": [
+      "legacy"
+    ],
+    "dataset_status": {
+      "asset_inspection": "in_progress",
+      "asset_register": "not_started"
+    },
+    "sql_instances": {
+      "HUB01": "Data hub"
+    }
+  },
+  "features": {
+    "home": true,
+    "setup": true,
+    "exercise": true,
+    "task1": true,
+    "task2": true,
+    "task3": true,
+    "task4": true,
+    "genie_results": true,
+    "facilitator": true,
+    "assistant": false,
+    "estate_federation": false,
+    "estate_upload": false
+  },
+  "rule_templates": [
+    {
+      "id": "no_missing_records",
+      "label": "Every source inspection is in the core fact",
+      "severity": "FAIL",
+      "expect": "== 0",
+      "sql": "SELECT count(*) AS metric, 'source inspections missing from core' AS detail FROM ${src_inspections} s LEFT ANTI JOIN ${edh} e ON s.inspection_id = e.inspection_id"
+    }
+  ]
+}

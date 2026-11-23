@@ -1,0 +1,17 @@
+# local, private — never commit
+local/
+.env
+.env.*
+server/.env
+app/server/.env
+# build / deps
+node_modules/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.databricks/
+.DS_Store
+# generated app build output (AppKit scaffold also ignores dist/)
+app/dist/
+app/build/
