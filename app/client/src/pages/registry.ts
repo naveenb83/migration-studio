@@ -15,6 +15,7 @@ export const PAGES: PageDef[] = [
   { id: 'home', path: '/', label: 'Home', group: 'Start', component: lazy(() => import('./home')) },
   { id: 'setup', path: '/setup', label: 'Setup', group: 'Start', component: lazy(() => import('./setup')) },
   { id: 'exercise', path: '/exercise', label: 'The exercise', group: 'Start', component: lazy(() => import('./exercise')) },
+  { id: 'genie_analyse', path: '/analyse', label: '1 · Genie Analyse', group: 'Tasks', needsTeam: true, component: lazy(() => import('./analyse')) },
   { id: 'task1', path: '/task1', label: '1 · Trace', group: 'Tasks', needsTeam: true, component: lazy(() => import('./task1')) },
   { id: 'task2', path: '/task2', label: '2 · Convert & run', group: 'Tasks', needsTeam: true, component: lazy(() => import('./task2')) },
   { id: 'task3', path: '/task3', label: '3 · Validate', group: 'Tasks', needsTeam: true, component: lazy(() => import('./task3')) },

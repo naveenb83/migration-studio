@@ -79,6 +79,7 @@ if __name__ == "__main__":
     ap.add_argument("--skip-prove", action="store_true")
     ap.add_argument("--skip-fix", action="store_true")
     ap.add_argument("--skip-core", action="store_true", help="skip recheck/fix/prove (only the own-code + Genie Code journeys)")
+    ap.add_argument("--analyse-fixture", help="FICTIONAL Genie Migrate analysis.json to upload (tests/fixtures/genie_analyse_example.json)")
     ap.add_argument("--own-code-dir", help="folder of FICTIONAL .dtsx/.sql files to upload (e.g. scanner/tests/fixtures/example_water/legacy)")
     a = ap.parse_args()
     api = Api(a.url, a.profile)
@@ -141,6 +142,23 @@ if __name__ == "__main__":
             check("genie code: brought back as the team file (validated)", st == 200 and t.get("saved_as") == manifest["stage_view"], str(t)[:120])
             st, tf = api.call("GET", f"/api/teamfiles/{manifest['stage_view']}")
             check("genie code: provenance recorded on the team file", st == 200 and (tf.get("meta") or {}).get("source") == "genie_code")
+
+    if a.analyse_fixture:
+        st, up = api.call("POST", "/api/genie-analyse/upload", {"name": "genie_analyse_example.json", "content": open(a.analyse_fixture).read()})
+        check("genie analyse: analysis uploaded and validated", st == 200 and up.get("source") == "uploaded" and up.get("missing") == 2, str(up)[:140])
+        st, bad = api.call("POST", "/api/genie-analyse/upload", {"name": "x.json", "content": "{\"hello\": 1}"})
+        check("genie analyse: non-analysis JSON rejected", st == 422, str(bad)[:120])
+        st, bad = api.call("POST", "/api/genie-analyse/import", {"path": "/Workspace/Users/someone/analysis.json"})
+        check("genie analyse: import outside the team folders refused", st == 400, str(bad)[:120])
+        st, mo = api.call("GET", f"/api/genie-analyse/model?id={up.get('id', '')}")
+        mm = (mo or {}).get("model") or {}
+        check("genie analyse: model has dependencies with line evidence and missing objects", st == 200 and len(mm.get("edges", [])) == 4 and all(e.get("lines") for e in mm.get("edges", [])) and len(mm.get("missing", [])) == 2, f"edges={len(mm.get('edges', []))} missing={len(mm.get('missing', []))}")
+        e0 = (mm.get("edges") or [{}])[0]
+        st, dec = api.call("POST", "/api/entries", {"kind": "analysis_decision", "entry_key": e0.get("key", "x"), "payload": {"decision": "confirmed", "note": "e2e", "source": "native", "analysis_id": up.get("id", "")}})
+        st2, decs = api.call("GET", "/api/entries?kind=analysis_decision")
+        check("genie analyse: review decision saved", st == 200 and any(d["entry_key"] == e0.get("key") for d in (decs or [])))
+        st, badd = api.call("POST", "/api/entries", {"kind": "analysis_decision", "entry_key": "x", "payload": {"decision": "maybe"}})
+        check("genie analyse: invalid decision rejected", st == 400, str(badd)[:100])
 
     if a.skip_core:
         n_ok = sum(1 for _, ok, _ in RESULTS if ok)

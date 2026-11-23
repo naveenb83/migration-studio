@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from 'express';
 import { randomUUID } from 'node:crypto';
+import { ZodError } from 'zod';
 import { fq } from '../lib/config';
 import { HttpError } from '../lib/identity';
 import { exec } from '../lib/sql';
@@ -15,6 +16,12 @@ export const route =
         if (!res.headersSent && out !== undefined) res.json(out);
       })
       .catch((e: unknown) => {
+        if (e instanceof ZodError) {
+          // bad input from the client: a readable 400, never a 500
+          const msg = e.issues.slice(0, 4).map((i) => `${i.path.join('.') || 'body'}: ${i.message}`).join('; ');
+          if (!res.headersSent) res.status(400).json({ error: `Invalid request: ${msg}` });
+          return;
+        }
         const status = e instanceof HttpError ? e.status : Number((e as { status?: number })?.status) || 500;
         const message = String((e as Error)?.message ?? e).slice(0, 1200);
         if (status >= 500) console.error(`[api] ${req.method} ${req.path}:`, message);

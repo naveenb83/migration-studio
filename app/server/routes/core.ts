@@ -24,6 +24,8 @@ const KINDS: Record<string, z.ZodType> = {
   pilot_plan: Payload,
   estimate: Payload,
   task_progress: Payload.and(z.object({ status: z.enum(['started', 'done']) })),
+  analysis_decision: Payload.and(z.object({ decision: z.enum(['confirmed', 'rejected', 'follow_up']) })),
+  analysis_manual: Payload,
 };
 const ROLES = ['driver', 'navigator', 'business_owner', 'observer', 'facilitator'] as const;
 
