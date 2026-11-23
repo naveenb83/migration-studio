@@ -143,11 +143,14 @@ export default function GenieAnalysePage() {
   };
   const addManual = async () => {
     if (!man.from || !man.to) return notify.error('Say what depends on what (from and to).');
+    const key = `m-${Date.now().toString(36)}`;
     try {
-      await api.post('/api/entries', { kind: 'analysis_manual', entry_key: `m-${Date.now().toString(36)}`, payload: { ...man } });
+      await api.post('/api/entries', { kind: 'analysis_manual', entry_key: key, payload: { ...man } });
+      // you added it with your own evidence, so it counts as confirmed (change it in the table if needed)
+      await decide(key, 'confirmed', man.note ?? '');
       setMan({});
       await manualE.reload();
-      notify.ok('Manual dependency added (labelled Manual).');
+      notify.ok('Manual dependency added and confirmed (labelled Manual).');
     } catch (e) {
       notify.error((e as Error).message);
     }
@@ -493,7 +496,11 @@ export default function GenieAnalysePage() {
             </TabsContent>
           </Tabs>
 
-          <Section title="3 · Use what you confirmed" description={`${confirmed} of ${m.edges.length} native dependencies confirmed · ${manual.length} manual addition(s).`}>
+          <Section title="3 · Use what you confirmed" description={`${confirmed} of ${m.edges.length} native dependencies confirmed · ${manual.filter((x) => decisions.get(x.key)?.decision === 'confirmed').length} of ${manual.length} manual addition(s) confirmed.`}>
+            {(() => {
+              const open = m.edges.filter((e) => !decisions.get(e.key)?.decision).length + manual.filter((x) => !decisions.get(x.key)?.decision).length;
+              return open > 0 ? <div className="mb-2 rounded-md border border-amber-300 bg-amber-50 p-2 text-sm text-amber-900">{open} dependenc{open === 1 ? 'y is' : 'ies are'} not reviewed yet. Only <b>Confirmed</b> ones are written to the lineage worksheet.</div> : null;
+            })()}
             <div className="flex flex-wrap gap-2">
               <Button size="sm" disabled={busy === 'lineage' || confirmed + manual.length === 0} onClick={() => void toLineage()}>
                 <ListPlus className="mr-1 h-4 w-4" /> Write confirmed dependencies to the lineage worksheet
